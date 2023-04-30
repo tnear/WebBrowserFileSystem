@@ -12,15 +12,15 @@
             "args": [
                 "-s", // single-threaded (aids gdb)
                 "-f", // run in foreground (required for printf statements)
-                "mnt/",
+                "mnt/", // Mounted directory
             ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "preLaunchTask": "Build",
-            "postDebugTask": "Umount",
+            "preLaunchTask": "Build",  // See tasks.json
+            "postDebugTask": "Umount", // See tasks.json
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -34,6 +34,5 @@
                 }
             ]
         }
-
     ]
 }

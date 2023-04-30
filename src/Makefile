@@ -1,15 +1,17 @@
 CC = gcc
-CFLAGS = -g 
-FUSE_FLAGS = `pkg-config --libs --cflags fuse`
+CFLAGS = -g
+# lcurl needed for curl, `...fuse` needed for fuse
+LDFLAGS = -lcurl `pkg-config --libs --cflags fuse`
 
 .PHONY: all
 all: fuse-main
 
-fuse-main: fuse-main.c
-	$(CC) fuse-main.c $(CFLAGS) $(FUSE_FLAGS) -o $@ 
+fuse-main: fuse-main.o util.o
+	$(CC) -o $@ fuse-main.o util.o $(LDFLAGS)
 
-#%.o: %.c
-#	$(CC) -c $< -o $@
+# Build C-files
+%.o: %.c
+	$(CC) -c $< $(CFLAGS) $(LDFLAGS) -o $@
 
 .PHONY: clean
 clean:
