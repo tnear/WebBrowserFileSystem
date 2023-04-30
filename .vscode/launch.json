@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "FUSE (gdb)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/fuse-main",
@@ -19,7 +19,7 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "preLaunchTask": "Build",  // See tasks.json
+            "preLaunchTask": "Source build",  // See tasks.json
             "postDebugTask": "Umount", // See tasks.json
             "setupCommands": [
                 {
@@ -33,6 +33,31 @@
                     "ignoreFailures": true
                 }
             ]
-        }
+        },
+        {
+            "name": "Test (gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "Test build",  // See tasks.json
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
     ]
 }

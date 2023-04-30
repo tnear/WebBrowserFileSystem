@@ -8,6 +8,7 @@
 #include <fuse.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 
 // https://www.youtube.com/watch?v=LZCILvr5tUk
@@ -25,6 +26,7 @@ static struct stat regular_file = {
 
 int myfs_getattr(const char *path, struct stat *stbuf)
 {
+    printf(path);
     if (strcmp(path, "/") == 0)
     {
         // Root path
@@ -33,7 +35,15 @@ int myfs_getattr(const char *path, struct stat *stbuf)
     else if (strcmp(path, HTML_FILE_PATH) == 0)
     {
         stbuf->st_mode = regular_file.st_mode;
-        stbuf->st_size = strlen(myText);
+        //stbuf->st_size = strlen(myText);
+        // Download URL
+        util_downloadURL("http://example.com", HTML_FILE);
+
+        // Read into buffer
+        char *contents = util_readEntireFile(HTML_FILE);
+
+        stbuf->st_size = strlen(contents);
+        free(contents);
     }
 
     return 0;
@@ -56,20 +66,17 @@ static int myfs_read(const char *path, char *buf, size_t size, off_t offset,
 {
     if (strcmp(path, HTML_FILE_PATH) == 0)
     {
-        printf("read for HTML_FILE\n");
-        util_print();
-        util_downloadURL("http://example.com");
+        // Download URL
+        util_downloadURL("http://example.com", HTML_FILE);
 
-        FILE *fp = fopen(HTML_FILE, "r");
-        char buf2[255] = {};
-        fread(buf2, 255, 1, fp);
+        // Read into buffer
+        char *contents = util_readEntireFile(HTML_FILE);
 
-        // Verify substring
-        assert(strstr(buf2, "doctype") != 0);
-
-        strcpy(buf, myText);
-
-        return strlen(myText);
+        // Copy to buffer
+        strcpy(buf, contents);
+        size_t len = strlen(contents);
+        free(contents);
+        return len;
     }
 
     return -ENOENT;
@@ -83,6 +90,6 @@ struct fuse_operations myOperations = {
 
 int main(int argc, char* argv[])
 {
-    printf("main1\n");
+    printf("main3\n");
     return fuse_main(argc, argv, &myOperations, NULL);
 }

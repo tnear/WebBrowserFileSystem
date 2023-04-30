@@ -2,23 +2,39 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <curl/curl.h>
 
-// todo: unify these
-static char myText[] = "Hello world3!\n";
-static char HTML_FILE[] = "example.html";
-static char HTML_FILE_PATH[] = "/example.html";
-
-
-void util_print()
+// Note: caller must free(buffer)
+char* util_readEntireFile(char *filename)
 {
-    printf("util_print\n");
+    char *buffer = NULL;
+    int length = 0;
+    FILE *file = fopen(filename, "rb");
+    if (!file)
+        return NULL;
+
+    // Get length
+    fseek(file, 0, SEEK_END);
+    length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate buffer
+    buffer = malloc(length + 1);
+
+    // Read file
+    fread(buffer, 1, length, file);
+    buffer[length] = '\0';
+    fclose(file);
+
+    // Return file data buffer (must call free(buffer))
+    return buffer;
 }
 
-void util_downloadURL(char *url)
+bool util_downloadURL(char *url, char *filename)
 {
     // open file for writing
-    FILE *file = fopen(HTML_FILE, "w");
+    FILE *file = fopen(filename, "w");
     assert(file);
 
     // initialize curl
@@ -37,7 +53,10 @@ void util_downloadURL(char *url)
     // check for errors
     if (res != CURLE_OK)
     {
-        printf("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        //fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        // Delete file for failed downloads
+        remove(filename);
+        return false;
     }
 
     // cleanup curl
@@ -45,4 +64,6 @@ void util_downloadURL(char *url)
 
     // close file handle
     fclose(file);
+
+    return true;
 }
