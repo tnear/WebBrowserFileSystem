@@ -58,7 +58,6 @@ static struct stat regular_file = {
 
 int myfs_getattr(const char *path, struct stat *stbuf)
 {
-
     if (strcmp(path, "/") == 0)
     {
         // Root path
@@ -118,6 +117,6 @@ struct fuse_operations myOperations = {
 
 int main(int argc, char* argv[])
 {
-    printf("main\n");
+    printf("main9\n");
     return fuse_main(argc, argv, &myOperations, NULL);
 }

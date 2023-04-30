@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.o",
+            "program": "${fileDirname}/fuse-main",
             "args": [
                 "-s", // single-threaded (aids gdb)
                 "-f", // run in foreground (required for printf statements)
@@ -19,6 +19,7 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "preLaunchTask": "Build",
             "postDebugTask": "Umount",
             "setupCommands": [
                 {

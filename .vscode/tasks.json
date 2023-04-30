@@ -2,31 +2,16 @@
 	"version": "2.0.0",
 	"tasks": [
         {
-            "type": "cppbuild",
-            "label": "C/C++: gcc build active file",
-            "command": "/usr/bin/gcc",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                //"$(pkg-config --libs --cflags fuse)", <= expands into 3 cmds below:
-                "-I/usr/include/fuse",
-                "-D_FILE_OFFSET_BITS=64",
-                "-lfuse",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}.o",
-            ],
+            "label": "Build",
+            "type": "shell",
+            "command": "make",
             "options": {
                 "cwd": "${fileDirname}"
             },
-            "problemMatcher": [
-                "$gcc"
-            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "compiler: /usr/bin/gcc"
         },
         {
             "label": "Umount",
@@ -35,6 +20,6 @@
             "args": [
                 "${fileDirname}/mnt",
             ]
-        }
+        },
     ],
 }
