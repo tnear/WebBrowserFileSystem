@@ -12,6 +12,8 @@ OBJS = $(SRCS:.c=.o)
 all: test
 
 test: $(OBJS)
+# Build src first before tests
+	(cd ../src; make all)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 # Build C-files with the same flags

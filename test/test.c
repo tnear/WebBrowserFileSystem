@@ -1,5 +1,6 @@
-#include "../src/util.h"
 #include "../src/linkedList.h"
+#include "../src/operations.h"
+#include "../src/util.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -97,15 +98,62 @@ void testLinkedList()
     llFreeList(head);
 }
 
-void testGetAttr()
+void testGetAttrFileExists()
 {
-    char path[] = "filePath.txt";
+    // create file
+    char full_filename[] = "/filePath.txt";
+    char *filename = full_filename + 1; // ignore leading slash
+    FILE *fp = fopen(filename, "w");
+
+    // write data
+    char data[] = "test data...";
+    fputs(data, fp);
+    fclose(fp);
+
     struct stat st;
     memset(&st, 0, sizeof(st));
-    //int ret = urlfs_getattr(path, st);
 
-    printf("here\n");
+    Node *llHead = NULL;
 
+    int ret = operations_getattr(full_filename, &st, &llHead);
+    const bool fileExists = access(filename, F_OK) == 0;
+    assert(fileExists);
+
+    remove(filename);
+
+    // verify successful call
+    assert(ret == 0);
+
+    // verify file attributes
+    assert(st.st_size == 12);
+    assert(st.st_mode == (S_IFREG | 0400));
+}
+
+void testGetAttrURL()
+{
+    char *full_filename = "/www.example.com";
+    char *filename = full_filename + 1; // ignore leading slash
+
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
+    Node *llHead = NULL;
+    int ret = operations_getattr(full_filename, &st, &llHead);
+
+    // verify file was created
+    const bool fileExists = access(filename, F_OK) == 0;
+    assert(fileExists);
+
+    // verify file contents
+    char *contents = util_readEntireFile(filename);
+    assert(strstr(contents, "<!doctype html>") != 0);
+    free(contents);
+    remove(filename);
+    
+    // verify getattr result
+    assert(ret == 0);
+    assert(st.st_size >= 1000 && st.st_size <= 10000);
+    assert(st.st_mode == (S_IFREG | 0400));
 }
 
 int main()
@@ -115,7 +163,8 @@ int main()
     testReadEntireFile();
     testReadInvalidFile();
     testLinkedList();
-    testGetAttr();
+    testGetAttrFileExists();
+    testGetAttrURL();
 
     printf("Tests passed!\n");
     return 0;
