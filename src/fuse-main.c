@@ -29,24 +29,7 @@ int urlfs_getattr(const char *path, struct stat *stbuf)
 int urlfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi)
 {
-    if (strcmp(path, "/") != 0)
-    {
-        // ignore non-root files
-        return 0;
-    }
-
-    // Root
-    const off_t zeroOffset = 0;
-
-    // Add all files added this session
-    Node *current = llHead;
-    while (current)
-    {
-        filler(buf, current->data, &regular_file, zeroOffset);
-        current = current->next;
-    }
-
-    return 0;
+    return operations_readdir(path, buf, filler, offset, llHead);
 }
 
 // Read data from an open file

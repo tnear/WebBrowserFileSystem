@@ -50,3 +50,25 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
 
     return 0;
 }
+
+int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t offset, struct Node *llHead)
+{
+    if (strcmp(path, "/") != 0)
+    {
+        // ignore non-root files
+        return 0;
+    }
+
+    // Root
+    const off_t zeroOffset = 0;
+
+    // fill all files added this session
+    Node *current = llHead;
+    while (current)
+    {
+        filler(buf, current->data, &regular_file, zeroOffset);
+        current = current->next;
+    }
+
+    return 0;
+}

@@ -156,6 +156,51 @@ void testGetAttrURL()
     assert(st.st_mode == (S_IFREG | 0400));
 }
 
+int g_testFillerCallCount = 0;
+
+int testFiller(void *buf, const char *name, const struct stat *stbuf, off_t off)
+{
+    ++g_testFillerCallCount;
+}
+
+void testReadDirRoot()
+{
+    g_testFillerCallCount = 0;
+    char filename[] = "/";
+    void *buf = NULL;
+
+    int (*filler)(void *buf, const char *name, const struct stat *stbuf, off_t off) = testFiller;
+
+    off_t offset = 0;
+    Node *llHead = NULL;
+    llInsertNode(&llHead, "file1.txt");
+    llInsertNode(&llHead, "file2.txt");
+
+    int ret = operations_readdir(filename, buf, testFiller, offset, llHead);
+
+    assert(g_testFillerCallCount == 2);
+    assert(ret == 0);
+    g_testFillerCallCount = 0;
+}
+
+void testReadDirFiles()
+{
+    // Nothing to do for non-root files
+    g_testFillerCallCount = 0;
+    char filename[] = "my_file.txt";
+    void *buf = NULL;
+
+    int (*filler)(void *buf, const char *name, const struct stat *stbuf, off_t off) = testFiller;
+
+    off_t offset = 0;
+    Node *llHead = NULL;
+    int ret = operations_readdir(filename, buf, testFiller, offset, llHead);
+
+    // verify success and that buf was unchanged
+    assert(g_testFillerCallCount == 0);
+    assert(ret == 0);
+}
+
 int main()
 {
     testDownloadURL();
@@ -165,6 +210,8 @@ int main()
     testLinkedList();
     testGetAttrFileExists();
     testGetAttrURL();
+    testReadDirRoot();
+    testReadDirFiles();
 
     printf("Tests passed!\n");
     return 0;
