@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-Node *createNode(const char *data)
+Node *llCreateNode(const char *data)
 {
     Node *newNode = (Node *)malloc(sizeof(Node));
     assert(newNode);
@@ -15,9 +15,9 @@ Node *createNode(const char *data)
 }
 
 // Insert a new node at the end of the list
-void insertNode(Node **head, const char *data)
+void llInsertNode(Node **head, const char *data)
 {
-    Node *newNode = createNode(data);
+    Node *newNode = llCreateNode(data);
     if (*head == NULL)
     {
         *head = newNode;
@@ -31,6 +31,17 @@ void insertNode(Node **head, const char *data)
         }
         current->next = newNode;
     }
+}
+
+void llInsertNodeIfDoesntExist(Node **head, const char *data)
+{
+    if (llContainsString(*head, data))
+    {
+        // already added
+        return;
+    }
+
+    llInsertNode(head, data);
 }
 
 /*
@@ -47,7 +58,7 @@ void displayList(const Node *head)
 */
 
 // Free the memory allocated for the linked list
-void freeList(Node *head)
+void llFreeList(Node *head)
 {
     Node *current = head;
     while (current)
@@ -57,4 +68,33 @@ void freeList(Node *head)
         free(current);
         current = next;
     }
+}
+
+bool llContainsString(Node *head, const char *data)
+{
+    Node *current = head;
+    while (current)
+    {
+        if (strcmp(current->data, data) == 0)
+        {
+            return true;
+        }
+
+        current = current->next;
+    }
+
+    return false;
+}
+
+int llGetLength(Node *head)
+{
+    int length = 0;
+    Node *current = head;
+    while (current)
+    {
+        ++length;
+        current = current->next;
+    }
+
+    return length;
 }

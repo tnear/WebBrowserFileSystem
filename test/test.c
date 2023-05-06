@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 void testDownloadURL()
 {
@@ -69,10 +70,19 @@ void testLinkedList()
 {
     Node *head = NULL;
 
-    insertNode(&head, "Hello");
-    insertNode(&head, "World");
-    insertNode(&head, "Linked");
-    insertNode(&head, "List");
+    llInsertNode(&head, "Hello");
+    llInsertNode(&head, "World");
+    llInsertNode(&head, "Linked");
+    llInsertNode(&head, "List");
+
+    assert(llContainsString(head, "Hello"));
+    assert(!llContainsString(head, "fake_string"));
+
+    assert(llGetLength(head) == 4);
+
+    // try duplicate insert
+    llInsertNodeIfDoesntExist(&head, "Hello");
+    assert(llGetLength(head) == 4);
 
     assert(strcmp(head->data, "Hello") == 0);
     head = head->next;
@@ -84,7 +94,18 @@ void testLinkedList()
     head = head->next;
     assert(!head);
 
-    freeList(head);
+    llFreeList(head);
+}
+
+void testGetAttr()
+{
+    char path[] = "filePath.txt";
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+    //int ret = urlfs_getattr(path, st);
+
+    printf("here\n");
+
 }
 
 int main()
@@ -94,6 +115,7 @@ int main()
     testReadEntireFile();
     testReadInvalidFile();
     testLinkedList();
+    testGetAttr();
 
     printf("Tests passed!\n");
     return 0;

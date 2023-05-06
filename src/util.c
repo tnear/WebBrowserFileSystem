@@ -6,7 +6,7 @@
 #include <curl/curl.h>
 
 // Note: caller must free(buffer)
-char* util_readEntireFile(char *filename)
+char* util_readEntireFile(const char *filename)
 {
     char *buffer = NULL;
     int length = 0;
@@ -31,7 +31,7 @@ char* util_readEntireFile(char *filename)
     return buffer;
 }
 
-bool util_downloadURL(char *url, char *filename)
+bool util_downloadURL(const char *url, const char *filename)
 {
     // open file for writing
     FILE *file = fopen(filename, "w");

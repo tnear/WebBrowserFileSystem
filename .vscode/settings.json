@@ -1,5 +1,16 @@
 {
     "files.associations": {
-        "fuse.h": "c"
+        "fuse.h": "c",
+        "array": "c",
+        "*.tcc": "c",
+        "deque": "c",
+        "string": "c",
+        "vector": "c",
+        "string_view": "c",
+        "algorithm": "c",
+        "limits": "c",
+        "numeric": "c",
+        "streambuf": "c",
+        "functional": "c"
     }
 }

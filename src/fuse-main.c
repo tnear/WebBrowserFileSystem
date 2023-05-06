@@ -1,5 +1,6 @@
 #define FUSE_USE_VERSION 31
 
+#include "operations.h"
 #include "linkedList.h"
 #include "util.h"
 
@@ -10,103 +11,71 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 // https://www.youtube.com/watch?v=LZCILvr5tUk
 
-typedef int (*fuse_fill_dir_t) (void *buf, const char *name,
-                const struct stat *stbuf, off_t off);
-
-static char HTML_FILE[] = "example.html";
-static char HTML_FILE_PATH[] = "/example.html";
-
-static struct stat regular_file = {
-    .st_mode = S_IFREG | 0400
-};
-
+// global variable for start of linked list
+// Todo: make it non-global
+Node *llHead = NULL;
 
 // Get file attributes. Similar to stat().
-int myfs_getattr(const char *path, struct stat *stbuf)
+int urlfs_getattr(const char *path, struct stat *stbuf)
 {
-    printf("getattr\n");
-    printf(path);
-    printf("\n");
-    if (strcmp(path, "/") == 0)
-    {
-        // Root path
-        stbuf->st_mode = S_IFDIR | 0400;
-        return 0;
-    }
-
-    const char *startOfFilePath = path + 1; // Account for leading "/", ex: "/file.html"
-    const bool fileExists = access(startOfFilePath, F_OK) == 0;
-    if (fileExists)
-    {
-        printf("file exists:\n");
-        printf(path);
-        printf("\n");
-    }
-    
-    if (strcmp(path, HTML_FILE_PATH) == 0)
-    {
-        stbuf->st_mode = regular_file.st_mode;
-        // Download URL
-        util_downloadURL("http://example.com", HTML_FILE);
-
-        // Read into buffer
-        char *contents = util_readEntireFile(HTML_FILE);
-
-        stbuf->st_size = strlen(contents);
-        free(contents);
-    }
-
-    return 0;
+    return operations_getattr(path, stbuf, &llHead);
 }
 
 // Read directory
-int myfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+int urlfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi)
 {
-    if (strcmp(path, "/") == 0)
+    if (strcmp(path, "/") != 0)
     {
-        // Root
-        off_t offset = 0;
-        filler(buf, HTML_FILE, &regular_file, offset);
+        // ignore non-root files
+        return 0;
+    }
+
+    // Root
+    const off_t zeroOffset = 0;
+
+    // Add all files added this session
+    Node *current = llHead;
+    while (current)
+    {
+        filler(buf, current->data, &regular_file, zeroOffset);
+        current = current->next;
     }
 
     return 0;
 }
 
 // Read data from an open file
-static int myfs_read(const char *path, char *buf, size_t size, off_t offset,
+int urlfs_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
-    printf("read\n");
-    printf(path);
-    printf("\n");
-    if (strcmp(path, HTML_FILE_PATH) == 0)
+    const char *pathNoSlash = path + 1;
+    if (!llContainsString(llHead, pathNoSlash))
     {
-        // Download URL
-        util_downloadURL("http://example.com", HTML_FILE);
-
-        // Read into buffer
-        char *contents = util_readEntireFile(HTML_FILE);
-
-        // Copy to buffer
-        strcpy(buf, contents);
-        size_t len = strlen(contents);
-        free(contents);
-        return len;
+        // cannot find this file
+        return -ENOENT;
     }
 
-    return -ENOENT;
+    util_downloadURL(pathNoSlash, pathNoSlash);
+    
+    // Read file into buffer
+    char *contents = util_readEntireFile(pathNoSlash);
+
+    // Copy to buffer
+    strcpy(buf, contents);
+    size_t len = strlen(contents);
+    free(contents);
+    return len;
 }
 
 struct fuse_operations urlfsOperations = {
-    .getattr = myfs_getattr,
-    .read    = myfs_read,
-    .readdir = myfs_readdir
+    .getattr = urlfs_getattr,
+    .read    = urlfs_read,
+    .readdir = urlfs_readdir
 };
 
 int main(int argc, char* argv[])

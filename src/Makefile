@@ -4,7 +4,7 @@ CFLAGS = -g
 LDFLAGS = -lcurl `pkg-config --libs --cflags fuse`
 
 # C-files
-SRCS = fuse-main.c util.c linkedList.c
+SRCS = fuse-main.c util.c linkedList.c operations.c
 
 # Mapping of .c -> .o files
 OBJS = $(SRCS:.c=.o)

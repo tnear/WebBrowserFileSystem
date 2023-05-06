@@ -3,7 +3,7 @@ CFLAGS = -g
 LDFLAGS = -lcurl
 
 # C-files
-SRCS = test.c ../src/util.c ../src/linkedList.c
+SRCS = test.c ../src/util.c ../src/linkedList.c ../src/operations.c
 
 # Mapping of .c -> .o files
 OBJS = $(SRCS:.c=.o)
