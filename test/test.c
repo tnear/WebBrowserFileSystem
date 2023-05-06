@@ -1,4 +1,5 @@
 #include "../src/util.h"
+#include "../src/linkedList.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -64,12 +65,35 @@ void testReadInvalidFile()
     assert(!contents);
 }
 
+void testLinkedList()
+{
+    Node *head = NULL;
+
+    insertNode(&head, "Hello");
+    insertNode(&head, "World");
+    insertNode(&head, "Linked");
+    insertNode(&head, "List");
+
+    assert(strcmp(head->data, "Hello") == 0);
+    head = head->next;
+    assert(strcmp(head->data, "World") == 0);
+    head = head->next;
+    assert(strcmp(head->data, "Linked") == 0);
+    head = head->next;
+    assert(strcmp(head->data, "List") == 0);
+    head = head->next;
+    assert(!head);
+
+    freeList(head);
+}
+
 int main()
 {
     testDownloadURL();
     testInvalidURL();
     testReadEntireFile();
     testReadInvalidFile();
+    testLinkedList();
 
     printf("Tests passed!\n");
     return 0;

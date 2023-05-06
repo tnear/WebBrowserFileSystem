@@ -53,7 +53,6 @@ bool util_downloadURL(char *url, char *filename)
     // check for errors
     if (res != CURLE_OK)
     {
-        //fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
         // Delete file for failed downloads
         remove(filename);
         return false;

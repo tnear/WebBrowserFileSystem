@@ -2,16 +2,22 @@ CC = gcc
 CFLAGS = -g
 LDFLAGS = -lcurl
 
+# C-files
+SRCS = test.c ../src/util.c ../src/linkedList.c
+
+# Mapping of .c -> .o files
+OBJS = $(SRCS:.c=.o)
+
 .PHONY: all
 all: test
 
-test: test.o ../src/util.o
-	$(CC) -o $@ test.o ../src/util.o $(LDFLAGS)
+test: $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
-# Build C-files
+# Build C-files with the same flags
 %.o: %.c
 	$(CC) -c $< $(CFLAGS) $(LDFLAGS) -o $@
 
 .PHONY: clean
 clean:
-	rm -f test *.o
+	rm -f test $(OBJS)
