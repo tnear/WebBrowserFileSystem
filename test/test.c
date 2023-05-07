@@ -101,39 +101,6 @@ void testLinkedList()
     llFreeList(head);
 }
 
-/*
-void testGetAttrFileExists()
-{
-    // create file
-    char full_filename[] = "/filePath.txt";
-    char *filename = full_filename + 1; // ignore leading slash
-    FILE *fp = fopen(filename, "w");
-
-    // write data
-    char data[] = "test data...";
-    fputs(data, fp);
-    fclose(fp);
-
-    struct stat st;
-    memset(&st, 0, sizeof(st));
-
-    Node *llHead = NULL;
-
-    int ret = operations_getattr(full_filename, &st, &llHead);
-    const bool fileExists = access(filename, F_OK) == 0;
-    assert(fileExists);
-
-    remove(filename);
-
-    // verify successful call
-    assert(ret == 0);
-
-    // verify file attributes
-    assert(st.st_size == 12);
-    assert(st.st_mode == (S_IFREG | 0777));
-}
-*/
-
 void testGetAttrURL()
 {
     char *full_filename = "/www.example.com";
@@ -237,6 +204,33 @@ void testRead()
     assert(fileLength >= 1024 && fileLength <= 2048);
 }
 
+void testReadSlash()
+{
+    char filename[] = "/www.example.com/path/";
+    char *filenameNoSlash = filename + 1;
+
+    // allocate sufficient space
+    char *contents = calloc(4096, 1);
+
+    size_t size = 0; // unused
+    off_t offset = 0; // unused
+
+    // init linked list with www.example.com
+    Node *llHead = NULL;
+    llInsertNode(&llHead, filenameNoSlash);
+
+    // read file, return length
+    int fileLength = operations_read(filename, contents, size, offset, llHead);
+    int strLength = strlen(contents);
+
+    // verify length and file contents
+    assert(strstr(contents, "<!doctype html>") != 0);
+    assert(strstr(contents, "</html>") != 0);
+    free(contents);
+    assert(strLength == fileLength);
+    assert(fileLength >= 1024 && fileLength <= 2048);
+}
+
 void testReadNoFiles()
 {
     char filename[] = "/www.example.com";
@@ -265,6 +259,69 @@ void testIsURL()
     assert(!util_isURL("com"));
 }
 
+void testUrlToFileName()
+{
+    {
+        char filename[PATH_MAX] = {};
+        char url[] = "www.google.com";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, url) == 0);
+    }
+    {
+        char filename[PATH_MAX] = {};
+        char url[] = "maps.google.com";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, url) == 0);
+    }
+    {
+        char filename[PATH_MAX] = {};
+        char url[] = "example.net";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, url) == 0);
+    }
+    {
+        // slash
+        char filename[PATH_MAX] = {};
+        char url[] = "google.com/index.html";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, "index.html") == 0);
+    }
+    {
+        // ends with slash (ignore)
+        char filename[PATH_MAX] = {};
+        char url[] = "google.com/";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, "google.com") == 0);
+    }
+    {
+        char filename[PATH_MAX] = {};
+        char url[] = "google.com/maps";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, "maps") == 0);
+    }
+    {
+        // ends with slash (ignore)
+        char filename[PATH_MAX] = {};
+        char url[] = "google.com/maps/";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, "maps") == 0);
+    }
+    {
+        // double slash
+        char filename[PATH_MAX] = {};
+        char url[] = "google.com/maps//";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, "maps") == 0);
+    }
+    {
+        // all slashes
+        char filename[PATH_MAX] = {};
+        char url[] = "///";
+        util_urlToFileName(filename, url);
+        assert(strcmp(filename, "") == 0);
+    }
+}
+
 void testSlash()
 {
 
@@ -282,8 +339,10 @@ int main()
     testReadDirRoot();
     testReadDirFiles();
     testRead();
+    testReadSlash();
     testReadNoFiles();
     testIsURL();
+    testUrlToFileName();
 
     printf("Tests passed!\n");
     return 0;

@@ -69,6 +69,7 @@ bool util_downloadURL(const char *url, const char *filename)
     return true;
 }
 
+// very simple utility to determine quickly if a string might be a URL
 bool util_isURL(const char *url)
 {
     if (url[0] == '.')
@@ -80,4 +81,49 @@ bool util_isURL(const char *url)
         return false; // URLs must contain a '.'
 
     return true;
+}
+
+// Ex for '/': "abc//" => "abc"
+static void removeTrailingChar(char *str, char charToRemove)
+{
+    while (1)
+    {
+        int len = strlen(str);
+        // Get last matching character
+        char *lastSlashLocation = strrchr(str, charToRemove);
+        if (lastSlashLocation == str + len - 1)
+        {
+            // remove forbidden character
+            str[len - 1] = '\0';
+        }
+        else
+            break;
+    }
+}
+
+void util_urlToFileName(char *filename, const char *inputURL)
+{
+    // copy string
+    char *url = strdup(inputURL);
+
+    // Remove trailing slashes
+    removeTrailingChar(url, '/');
+
+    const char *startingPoint = NULL;
+    char *lastSlashLocation = strrchr(url, '/');
+    if (lastSlashLocation)
+    {
+        // trim after last slash
+        startingPoint = lastSlashLocation + 1;
+    }
+    else
+    {
+        startingPoint = url;
+    }
+
+    assert(startingPoint);
+    memcpy(filename, startingPoint, strlen(startingPoint));
+
+    // cleanup
+    free(url);
 }

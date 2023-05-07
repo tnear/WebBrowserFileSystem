@@ -27,8 +27,6 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
         return 0;
     }
 
-    printf(pathNoSlash);
-    printf("\n");
     /*
     optimizing for existing files cause issues with 
     writing to one directory up and locking up filesystem.
@@ -37,7 +35,7 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
     {
         // get file metadata
         struct stat localBuf;
-	    int ret = stat(pathNoSlash, &localBuf);
+        int ret = stat(pathNoSlash, &localBuf);
 
         // deep copy to stbuf argument
         memcpy(stbuf, &localBuf, sizeof(struct stat));
@@ -46,29 +44,33 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
     }
     */
 
-    const bool isValidURL = util_downloadURL(pathNoSlash, pathNoSlash);
+    char filename[PATH_MAX] = {};
+    util_urlToFileName(filename, pathNoSlash);
+
+    const bool isValidURL = util_downloadURL(pathNoSlash, filename);
     if (!isValidURL)
     {
         // nothing to add
         return 0;
     }
 
-    printf("Inserting\n");
-    llInsertNodeIfDoesntExist(llHead, pathNoSlash);
+    printf(pathNoSlash);
+    printf("\n");
+    llInsertNodeIfDoesntExist(llHead, filename);
 
     // Read into buffer
-    char *contents = util_readEntireFile(pathNoSlash);
+    char *contents = util_readEntireFile(filename);
 
     // copy file attributes
     struct stat localBuf;
-    int ret = stat(pathNoSlash, &localBuf);
+    int ret = stat(filename, &localBuf);
     assert(ret == 0);
 
     // deep copy to stbuf argument
     memcpy(stbuf, &localBuf, sizeof(struct stat));
 
     // remove file
-    remove(pathNoSlash);
+    remove(filename);
 
     stbuf->st_size = strlen(contents);
     stbuf->st_mode = regular_file.st_mode;
@@ -112,11 +114,14 @@ int operations_read(const char *path, char *buf, size_t size,
         return -ENOENT;
     }
 
-    util_downloadURL(pathNoSlash, pathNoSlash);
+    char filename[PATH_MAX] = {};
+    util_urlToFileName(filename, pathNoSlash);
+
+    util_downloadURL(pathNoSlash, filename);
 
     // Read file into buffer
-    char *contents = util_readEntireFile(pathNoSlash);
-    remove(pathNoSlash);
+    char *contents = util_readEntireFile(filename);
+    remove(filename);
     
     // Copy to buffer
     strcpy(buf, contents);
