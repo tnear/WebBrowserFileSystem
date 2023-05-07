@@ -100,15 +100,12 @@ void testLinkedList()
     llFreeList(head);
 }
 
+/*
 void testGetAttrFileExists()
 {
-    // Create test directory
-    int ret = mkdir("mnt", 0700);
-    assert(ret == 0);
-    
     // create file
-    char fileNameSlashPrefix[] = "/filePath.txt";
-    char *filename = "mnt/filePath.txt";
+    char full_filename[] = "/filePath.txt";
+    char *filename = full_filename + 1; // ignore leading slash
     FILE *fp = fopen(filename, "w");
 
     // write data
@@ -121,66 +118,42 @@ void testGetAttrFileExists()
 
     Node *llHead = NULL;
 
-    char mountDir[PATH_MAX] = {};
-    getcwd(mountDir, sizeof(mountDir));
-    strcat(mountDir, "/mnt/");
-
-    ret = operations_getattr(fileNameSlashPrefix, mountDir, &st, &llHead);
+    int ret = operations_getattr(full_filename, &st, &llHead);
     const bool fileExists = access(filename, F_OK) == 0;
     assert(fileExists);
 
-    // cleanup
     remove(filename);
-    assert(rmdir("mnt") == 0);
 
     // verify successful call
     assert(ret == 0);
 
     // verify file attributes
     assert(st.st_size == 12);
-    // verify read/write/execute permissions
     assert(st.st_mode == (S_IFREG | 0777));
 }
+*/
 
 void testGetAttrURL()
 {
-    // Create test directory
-    int ret = mkdir("mnt", 0700);
-    assert(ret == 0);
-
-    char *fileNameSlashPrefix = "/www.example.com";
-    char *filename = "mnt/www.example.com";
+    char *full_filename = "/www.example.com";
+    char *filename = full_filename + 1; // ignore leading slash
 
     struct stat st;
     memset(&st, 0, sizeof(st));
     Node *llHead = NULL;
 
-    char mountDir[PATH_MAX] = {};
-    getcwd(mountDir, sizeof(mountDir));
-    strcat(mountDir, "/mnt/");
-
-    ret = operations_getattr(fileNameSlashPrefix, mountDir, &st, &llHead);
+    int ret = operations_getattr(full_filename, &st, &llHead);
+    assert(ret == 0);
 
     // verify linked list is correct
     assert(llGetLength(llHead) == 1);
-    llContainsString(llHead, fileNameSlashPrefix + 1);
+    llContainsString(llHead, filename);
 
-    // verify file was created
+    // update: files are now transient
     const bool fileExists = access(filename, F_OK) == 0;
-    assert(fileExists);
+    assert(!fileExists);
 
-    // verify file contents
-    char *contents = util_readEntireFile(filename);
-    assert(strstr(contents, "<!doctype html>") != 0);
-    assert(strstr(contents, "</html>") != 0);
-
-    // cleanup
-    free(contents);
-    remove(filename);
-    assert(rmdir("mnt") == 0);
-    
     // verify getattr result
-    assert(ret == 0);
     assert(st.st_size >= 1000 && st.st_size <= 10000);
     // verify read/write/execute permissions
     assert(st.st_mode == (S_IFREG | 0777));
@@ -233,14 +206,11 @@ void testReadDirFiles()
 
 void testRead()
 {
-    // create test directory
-    assert(mkdir("mnt", 0700) == 0);
+    char filename[] = "/www.example.com";
+    char *filenameNoSlash = filename + 1;
 
-    char filenameSlash[] = "/www.example.com";
-    char *filenameNoSlash = filenameSlash + 1; // +1 to trim slash
-    char absPath[] = "mnt/www.example.com";
-
-    char *contents = malloc(2048);
+    // allocate sufficient space
+    char *contents = calloc(4096, 1);
 
     size_t size = 0; // unused
     off_t offset = 0; // unused
@@ -249,17 +219,9 @@ void testRead()
     Node *llHead = NULL;
     llInsertNode(&llHead, filenameNoSlash);
 
-    // create mount dir for testing
-    char mountDir[PATH_MAX] = {};
-    getcwd(mountDir, sizeof(mountDir));
-    strcat(mountDir, "/mnt/");
-
     // read file, return length
-    int fileLength = operations_read(filenameSlash, mountDir, contents, size, offset, llHead);
+    int fileLength = operations_read(filename, contents, size, offset, llHead);
     int strLength = strlen(contents);
-
-    remove(absPath);
-    assert(rmdir("mnt") == 0);
 
     // verify length and file contents
     assert(strstr(contents, "<!doctype html>") != 0);
@@ -280,11 +242,7 @@ void testReadNoFiles()
     // init linked list with www.example.com
     Node *llHead = NULL;
 
-    char mountDir[PATH_MAX] = {};
-    getcwd(mountDir, sizeof(mountDir));
-    strcat(mountDir, "/mnt/");
-
-    int ret = operations_read(filename, mountDir, contents, size, offset, llHead);
+    int ret = operations_read(filename, contents, size, offset, llHead);
 
     // verify result
     //free(contents);
@@ -307,7 +265,7 @@ int main()
     testReadEntireFile();
     testReadInvalidFile();
     testLinkedList();
-    testGetAttrFileExists();
+    //testGetAttrFileExists();
     testGetAttrURL();
     testReadDirRoot();
     testReadDirFiles();

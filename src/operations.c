@@ -10,51 +10,47 @@
 #include <string.h>
 #include <unistd.h>
 
-int operations_getattr(const char *path, const char *mountDir, struct stat *stbuf, Node **llHead)
+int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
 {
     if (strcmp(path, "/") == 0)
     {
         // Root path
-        stbuf->st_mode = S_IFDIR | 0777;
+        stbuf->st_mode = S_IFDIR | 0400;
         return 0;
     }
-    
-    // Account for leading "/", ex: "/example.com" => "example.com"
-    const char *pathNoSlash = path + 1;
 
-    // mountDir ex: "/home/.../mnt/"
+    const char *pathNoSlash = path + 1; // Account for leading "/", ex: "/file.html"
 
-    // absPath: [mountDir, path]
-    char absPath[PATH_MAX] = {};
-    strcat(absPath, mountDir);
-    strcat(absPath, pathNoSlash);
-
-    const bool fileExists = access(absPath, F_OK) == 0;
+    /*
+    optimizing for existing files cause issues with 
+    writing to one directory up and locking up filesystem.
+    const bool fileExists = access(pathNoSlash, F_OK) == 0;
     if (fileExists)
     {
         // get file metadata
         struct stat localBuf;
-	    int ret = stat(absPath, &localBuf);
+	    int ret = stat(pathNoSlash, &localBuf);
 
         // deep copy to stbuf argument
         memcpy(stbuf, &localBuf, sizeof(struct stat));
-
         stbuf->st_mode = regular_file.st_mode;
         return ret;
     }
+    */
 
-    const bool isValidURL = util_downloadURL(pathNoSlash, absPath);
+    const bool isValidURL = util_downloadURL(pathNoSlash, pathNoSlash);
     if (!isValidURL)
     {
         // nothing to add
         return 0;
     }
 
-    printf("Inserting...\n");
+    printf("Inserting\n");
     llInsertNodeIfDoesntExist(llHead, pathNoSlash);
 
     // Read into buffer
-    char *contents = util_readEntireFile(absPath);
+    char *contents = util_readEntireFile(pathNoSlash);
+    remove(pathNoSlash);
 
     stbuf->st_size = strlen(contents);
     stbuf->st_mode = regular_file.st_mode;
@@ -86,7 +82,7 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     return 0;
 }
 
-int operations_read(const char *path, const char *mountDir, char *buf, size_t size,
+int operations_read(const char *path, char *buf, size_t size,
     off_t offset, struct Node *llHead)
 {
     // ex: path: "/example.com"
@@ -98,16 +94,12 @@ int operations_read(const char *path, const char *mountDir, char *buf, size_t si
         return -ENOENT;
     }
 
-    // absPath: [mountDir, path]
-    char absPath[PATH_MAX] = {};
-    strcat(absPath, mountDir);
-    strcat(absPath, pathNoSlash);
+    util_downloadURL(pathNoSlash, pathNoSlash);
 
-    util_downloadURL(pathNoSlash, absPath);
-    
     // Read file into buffer
-    char *contents = util_readEntireFile(absPath);
-
+    char *contents = util_readEntireFile(pathNoSlash);
+    remove(pathNoSlash);
+    
     // Copy to buffer
     strcpy(buf, contents);
     size_t len = strlen(contents);
