@@ -20,37 +20,23 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
         return 0;
     }
 
-    Node *existingNode = llFindNode(*llHead, path + 1);
-    const char *pathNoSlash = NULL;
-    char *pathCopy = NULL;
-    if (existingNode)
-    {
-        pathNoSlash = existingNode->url;
-    }
-    else
-    {
-        pathCopy = strdup(path);
-        // '/' is not allowed in file name, so have user type in '\'. Replace it here:
-        util_replaceChar(pathCopy, '\\', '/');
+    char *url = getURL(path, *llHead);
 
-        pathNoSlash = pathCopy + 1; // Account for leading "/", ex: "/file.html"
-    }
-
-    if (!util_isURL(pathNoSlash))
+    if (!util_isURL(url))
     {
         // not URL, don't waste time networking
         return 0;
     }
 
     char filename[PATH_MAX] = {};
-    util_urlToFileName(filename, pathNoSlash);
+    util_urlToFileName(filename, url);
 
-    const bool isValidURL = util_downloadURL(pathNoSlash, filename);
+    const bool isValidURL = util_downloadURL(url, filename);
     if (isValidURL)
     {
-        printf(pathNoSlash);
+        printf(url);
         printf("\n");
-        llInsertNodeIfDoesntExist(llHead, filename, pathNoSlash);
+        llInsertNodeIfDoesntExist(llHead, filename, url);
 
         // Read into buffer
         char *contents = util_readEntireFile(filename);
@@ -69,7 +55,7 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
         free(contents);
     }
 
-    free(pathCopy);
+    free(url);
     return 0;
 }
 
@@ -96,49 +82,49 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     return 0;
 }
 
-int operations_read(const char *path, char *buf, size_t size,
+int operations_read(const char *fusePath, char *buf, size_t size,
     off_t offset, struct Node *llHead)
 {
-    Node *existingNode = llFindNode(llHead, path + 1);
-    const char *pathNoSlash = NULL;
-    char *pathCopy = NULL;
+    char *url = getURL(fusePath, llHead);
+
+    char filename[PATH_MAX] = {};
+    util_urlToFileName(filename, url);
+    int len = 0;
+
+    assert(llContainsString(llHead, filename));
+    util_downloadURL(url, filename);
+
+    // Read file into buffer
+    char *contents = util_readEntireFile(filename);
+    remove(filename);
+    
+    // Copy to buffer
+    strcpy(buf, contents);
+    len = strlen(contents);
+    free(contents);
+
+    free(url);
+    return len;
+}
+
+char *getURL(const char *fusePath, struct Node *llHead)
+{
+    char *pathNoSlash = NULL;
+    Node *existingNode = llFindNode(llHead, fusePath + 1);
     if (existingNode)
     {
-        pathNoSlash = existingNode->url;
+        pathNoSlash = strdup(existingNode->url);
     }
     else
     {
         // ex: path: "/example.com"
         // ex: pathNoSlash: "example.com"
-        pathCopy = strdup(path);
+        char *pathCopy = strdup(fusePath);
         // '/' is not allowed in file name, so have user type in '\'. Replace it here:
         util_replaceChar(pathCopy, '\\', '/');
-        pathNoSlash = pathCopy + 1;
+        pathNoSlash = strdup(pathCopy + 1);
+        free(pathCopy);
     }
 
-    char filename[PATH_MAX] = {};
-    util_urlToFileName(filename, pathNoSlash);
-    int len = 0;
-
-    if (llContainsString(llHead, filename))
-    {
-        util_downloadURL(pathNoSlash, filename);
-
-        // Read file into buffer
-        char *contents = util_readEntireFile(filename);
-        remove(filename);
-        
-        // Copy to buffer
-        strcpy(buf, contents);
-        len = strlen(contents);
-        free(contents);
-    }
-    else
-    {
-        // cannot find this file
-        len = -ENOENT;
-    }
-
-    free(pathCopy);
-    return len;
+    return pathNoSlash;
 }

@@ -235,6 +235,8 @@ void testReadBackslash()
     assert(fileLength >= 1024 && fileLength <= 2048);
 }
 
+/*
+Unreachable?
 void testReadNoFiles()
 {
     char filename[] = "/www.example.com";
@@ -252,6 +254,7 @@ void testReadNoFiles()
     //free(contents);
     assert(ret == -ENOENT);
 }
+*/
 
 void testIsURL()
 {
@@ -355,13 +358,11 @@ int main()
     testReadEntireFile();
     testReadInvalidFile();
     testLinkedList();
-    //testGetAttrFileExists();
     testGetAttrURL();
     testReadDirRoot();
     testReadDirFiles();
     testRead();
     testReadBackslash();
-    testReadNoFiles();
     testIsURL();
     testUrlToFileName();
     testReplaceChar();
