@@ -12,5 +12,6 @@ char* util_readEntireFile(const char *filename);
 
 bool util_isURL(const char *url);
 void util_urlToFileName(char *filename, const char *url);
+void util_replaceChar(char *str, char orig, char rep);
 
 #endif

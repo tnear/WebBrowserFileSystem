@@ -127,3 +127,13 @@ void util_urlToFileName(char *filename, const char *inputURL)
     // cleanup
     free(url);
 }
+
+// replaces all occurrences of 'orig' with 'rep'
+void util_replaceChar(char *str, char orig, char rep)
+{
+    char *ptr = str;
+    while (ptr = strchr(ptr, orig))
+    {
+        *ptr++ = rep;
+    }
+}

@@ -20,62 +20,45 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
         return 0;
     }
 
-    const char *pathNoSlash = path + 1; // Account for leading "/", ex: "/file.html"
+    char *pathCopy = strdup(path);
+    // '/' is not allowed in file name, so have user type in '\'. Replace it here:
+    util_replaceChar(pathCopy, '\\', '/');
+
+    const char *pathNoSlash = pathCopy + 1; // Account for leading "/", ex: "/file.html"
     if (!util_isURL(pathNoSlash))
     {
         // not URL, don't waste time networking
         return 0;
     }
 
-    /*
-    optimizing for existing files cause issues with 
-    writing to one directory up and locking up filesystem.
-    const bool fileExists = access(pathNoSlash, F_OK) == 0;
-    if (fileExists)
-    {
-        // get file metadata
-        struct stat localBuf;
-        int ret = stat(pathNoSlash, &localBuf);
-
-        // deep copy to stbuf argument
-        memcpy(stbuf, &localBuf, sizeof(struct stat));
-        stbuf->st_mode = regular_file.st_mode;
-        return ret;
-    }
-    */
-
     char filename[PATH_MAX] = {};
     util_urlToFileName(filename, pathNoSlash);
 
     const bool isValidURL = util_downloadURL(pathNoSlash, filename);
-    if (!isValidURL)
+    if (isValidURL)
     {
-        // nothing to add
-        return 0;
+        printf(pathNoSlash);
+        printf("\n");
+        llInsertNodeIfDoesntExist(llHead, filename);
+
+        // Read into buffer
+        char *contents = util_readEntireFile(filename);
+
+        // copy file attributes to stbuf
+        struct stat localBuf;
+        int ret = stat(filename, &localBuf);
+        assert(ret == 0);
+        memcpy(stbuf, &localBuf, sizeof(struct stat));
+
+        // remove file
+        remove(filename);
+
+        stbuf->st_size = strlen(contents);
+        stbuf->st_mode = regular_file.st_mode;
+        free(contents);
     }
 
-    printf(pathNoSlash);
-    printf("\n");
-    llInsertNodeIfDoesntExist(llHead, filename);
-
-    // Read into buffer
-    char *contents = util_readEntireFile(filename);
-
-    // copy file attributes
-    struct stat localBuf;
-    int ret = stat(filename, &localBuf);
-    assert(ret == 0);
-
-    // deep copy to stbuf argument
-    memcpy(stbuf, &localBuf, sizeof(struct stat));
-
-    // remove file
-    remove(filename);
-
-    stbuf->st_size = strlen(contents);
-    stbuf->st_mode = regular_file.st_mode;
-    free(contents);
-
+    free(pathCopy);
     return 0;
 }
 
@@ -107,25 +90,34 @@ int operations_read(const char *path, char *buf, size_t size,
 {
     // ex: path: "/example.com"
     // ex: pathNoSlash: "example.com"
-    const char *pathNoSlash = path + 1;
-    if (!llContainsString(llHead, pathNoSlash))
-    {
-        // cannot find this file
-        return -ENOENT;
-    }
+    char *pathCopy = strdup(path);
+    // '/' is not allowed in file name, so have user type in '\'. Replace it here:
+    util_replaceChar(pathCopy, '\\', '/');
 
+    const char *pathNoSlash = pathCopy + 1;
     char filename[PATH_MAX] = {};
     util_urlToFileName(filename, pathNoSlash);
+    int len = 0;
 
-    util_downloadURL(pathNoSlash, filename);
+    if (llContainsString(llHead, filename))
+    {
+        util_downloadURL(pathNoSlash, filename);
 
-    // Read file into buffer
-    char *contents = util_readEntireFile(filename);
-    remove(filename);
-    
-    // Copy to buffer
-    strcpy(buf, contents);
-    size_t len = strlen(contents);
-    free(contents);
+        // Read file into buffer
+        char *contents = util_readEntireFile(filename);
+        remove(filename);
+        
+        // Copy to buffer
+        strcpy(buf, contents);
+        len = strlen(contents);
+        free(contents);
+    }
+    else
+    {
+        // cannot find this file
+        len = -ENOENT;
+    }
+
+    free(pathCopy);
     return len;
 }

@@ -204,9 +204,9 @@ void testRead()
     assert(fileLength >= 1024 && fileLength <= 2048);
 }
 
-void testReadSlash()
+void testReadBackslash()
 {
-    char filename[] = "/www.example.com/path/";
+    char filename[] = "/www.example.com\\path\\";
     char *filenameNoSlash = filename + 1;
 
     // allocate sufficient space
@@ -217,7 +217,7 @@ void testReadSlash()
 
     // init linked list with www.example.com
     Node *llHead = NULL;
-    llInsertNode(&llHead, filenameNoSlash);
+    llInsertNode(&llHead, "path");
 
     // read file, return length
     int fileLength = operations_read(filename, contents, size, offset, llHead);
@@ -322,6 +322,23 @@ void testUrlToFileName()
     }
 }
 
+void testReplaceChar()
+{
+    {
+        // Replace '/' with '\'
+        char str[] = "a/b";
+        util_replaceChar(str, '/', '\\');
+        assert(strcmp(str, "a\\b") == 0);
+    }
+
+    {
+        // Replace '/' with '\'
+        char str[] = "//";
+        util_replaceChar(str, '/', '\\');
+        assert(strcmp(str, "\\\\") == 0);
+    }
+}
+
 void testSlash()
 {
 
@@ -339,10 +356,11 @@ int main()
     testReadDirRoot();
     testReadDirFiles();
     testRead();
-    testReadSlash();
+    testReadBackslash();
     testReadNoFiles();
     testIsURL();
     testUrlToFileName();
+    testReplaceChar();
 
     printf("Tests passed!\n");
     return 0;
