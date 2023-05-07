@@ -6,15 +6,17 @@
 // Linked list of strings
 typedef struct Node
 {
-    char *data;
+    char *filename;
+    char *url;
     struct Node *next;
 } Node;
 
-Node *llCreateNode(const char *data);
-void llInsertNode(Node **head, const char *data);
-void llInsertNodeIfDoesntExist(Node **head, const char *data);
+Node* llCreateNode(const char *filename, const char *url);
+Node* llInsertNode(Node **head, const char *filename, const char *url);
+void llInsertNodeIfDoesntExist(Node **head, const char *filename, const char *url);
 void llFreeList(Node *head);
-bool llContainsString(Node *head, const char *data);
+bool llContainsString(Node *head, const char *filename);
+Node* llFindNode(Node *head, const char *filename);
 int llGetLength(Node *head);
 
 #endif

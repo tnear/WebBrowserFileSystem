@@ -74,27 +74,31 @@ void testLinkedList()
 {
     Node *head = NULL;
 
-    llInsertNode(&head, "Hello");
-    llInsertNode(&head, "World");
-    llInsertNode(&head, "Linked");
-    llInsertNode(&head, "List");
+    Node *helloNode = llInsertNode(&head, "Hello",  "Hello.html");
+    assert(strcmp(helloNode->filename, "Hello") == 0);
+    assert(strcmp(helloNode->url, "Hello.html") == 0);
+    llInsertNode(&head, "World",  "World.html");
+    llInsertNode(&head, "Linked", "Linked.html");
+    llInsertNode(&head, "List",   "List.html");
 
     assert(llContainsString(head, "Hello"));
     assert(!llContainsString(head, "fake_string"));
 
+    assert(llFindNode(head, "Hello") == helloNode);
+
     assert(llGetLength(head) == 4);
 
     // try duplicate insert
-    llInsertNodeIfDoesntExist(&head, "Hello");
+    llInsertNodeIfDoesntExist(&head, "Hello", "Hello.html");
     assert(llGetLength(head) == 4);
 
-    assert(strcmp(head->data, "Hello") == 0);
+    assert(strcmp(head->filename, "Hello") == 0);
     head = head->next;
-    assert(strcmp(head->data, "World") == 0);
+    assert(strcmp(head->filename, "World") == 0);
     head = head->next;
-    assert(strcmp(head->data, "Linked") == 0);
+    assert(strcmp(head->filename, "Linked") == 0);
     head = head->next;
-    assert(strcmp(head->data, "List") == 0);
+    assert(strcmp(head->filename, "List") == 0);
     head = head->next;
     assert(!head);
 
@@ -149,8 +153,8 @@ void testReadDirRoot()
 
     off_t offset = 0;
     Node *llHead = NULL;
-    llInsertNode(&llHead, "file1.txt");
-    llInsertNode(&llHead, "file2.txt");
+    llInsertNode(&llHead, "file1.txt", "file1.txt");
+    llInsertNode(&llHead, "file2.txt", "file2.txt");
 
     int ret = operations_readdir(filename, buf, testFiller, offset, llHead);
 
@@ -190,7 +194,7 @@ void testRead()
 
     // init linked list with www.example.com
     Node *llHead = NULL;
-    llInsertNode(&llHead, filenameNoSlash);
+    llInsertNode(&llHead, filenameNoSlash, filenameNoSlash);
 
     // read file, return length
     int fileLength = operations_read(filename, contents, size, offset, llHead);
@@ -206,8 +210,8 @@ void testRead()
 
 void testReadBackslash()
 {
-    char filename[] = "/www.example.com\\path\\";
-    char *filenameNoSlash = filename + 1;
+    //char filename[] = "/www.example.com\\path\\";
+    //char *filenameNoSlash = filename + 1;
 
     // allocate sufficient space
     char *contents = calloc(4096, 1);
@@ -217,10 +221,10 @@ void testReadBackslash()
 
     // init linked list with www.example.com
     Node *llHead = NULL;
-    llInsertNode(&llHead, "path");
+    llInsertNode(&llHead, "path", "www.example.com/path");
 
     // read file, return length
-    int fileLength = operations_read(filename, contents, size, offset, llHead);
+    int fileLength = operations_read("/path", contents, size, offset, llHead);
     int strLength = strlen(contents);
 
     // verify length and file contents

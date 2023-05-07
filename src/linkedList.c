@@ -4,20 +4,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-Node *llCreateNode(const char *data)
+Node *llCreateNode(const char *filename, const char *url)
 {
-    Node *newNode = (Node *)malloc(sizeof(Node));
+    Node *newNode = malloc(sizeof(Node));
     assert(newNode);
     // Duplicate the string
-    newNode->data = strdup(data);
+    newNode->filename = strdup(filename);
+    newNode->url = strdup(url);
     newNode->next = NULL;
     return newNode;
 }
 
 // Insert a new node at the end of the list
-void llInsertNode(Node **head, const char *data)
+Node* llInsertNode(Node **head, const char *filename, const char *url)
 {
-    Node *newNode = llCreateNode(data);
+    Node *newNode = llCreateNode(filename, url);
     if (*head == NULL)
     {
         *head = newNode;
@@ -31,17 +32,19 @@ void llInsertNode(Node **head, const char *data)
         }
         current->next = newNode;
     }
+
+    return newNode;
 }
 
-void llInsertNodeIfDoesntExist(Node **head, const char *data)
+void llInsertNodeIfDoesntExist(Node **head, const char *filename, const char *url)
 {
-    if (llContainsString(*head, data))
+    if (llContainsString(*head, filename))
     {
         // already added
         return;
     }
 
-    llInsertNode(head, data);
+    llInsertNode(head, filename, url);
 }
 
 // Free the memory allocated for the linked list
@@ -51,26 +54,34 @@ void llFreeList(Node *head)
     while (current)
     {
         Node *next = current->next;
-        free(current->data);
+        free(current->filename);
+        free(current->url);
         free(current);
         current = next;
     }
 }
 
-bool llContainsString(Node *head, const char *data)
+bool llContainsString(Node *head, const char *filename)
+{
+    return llFindNode(head, filename) != NULL;
+}
+
+Node* llFindNode(Node *head, const char *filename)
 {
     Node *current = head;
     while (current)
     {
-        if (strcmp(current->data, data) == 0)
+        // Just check filename because it is filename
+        // that must be unique on file system
+        if (strcmp(current->filename, filename) == 0)
         {
-            return true;
+            return current;
         }
 
         current = current->next;
     }
 
-    return false;
+    return NULL;
 }
 
 int llGetLength(Node *head)

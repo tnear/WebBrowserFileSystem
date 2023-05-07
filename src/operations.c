@@ -20,11 +20,22 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
         return 0;
     }
 
-    char *pathCopy = strdup(path);
-    // '/' is not allowed in file name, so have user type in '\'. Replace it here:
-    util_replaceChar(pathCopy, '\\', '/');
+    Node *existingNode = llFindNode(*llHead, path + 1);
+    const char *pathNoSlash = NULL;
+    char *pathCopy = NULL;
+    if (existingNode)
+    {
+        pathNoSlash = existingNode->url;
+    }
+    else
+    {
+        pathCopy = strdup(path);
+        // '/' is not allowed in file name, so have user type in '\'. Replace it here:
+        util_replaceChar(pathCopy, '\\', '/');
 
-    const char *pathNoSlash = pathCopy + 1; // Account for leading "/", ex: "/file.html"
+        pathNoSlash = pathCopy + 1; // Account for leading "/", ex: "/file.html"
+    }
+
     if (!util_isURL(pathNoSlash))
     {
         // not URL, don't waste time networking
@@ -39,7 +50,7 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
     {
         printf(pathNoSlash);
         printf("\n");
-        llInsertNodeIfDoesntExist(llHead, filename);
+        llInsertNodeIfDoesntExist(llHead, filename, pathNoSlash);
 
         // Read into buffer
         char *contents = util_readEntireFile(filename);
@@ -78,7 +89,7 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     Node *current = llHead;
     while (current)
     {
-        filler(buf, current->data, &regular_file, zeroOffset);
+        filler(buf, current->filename, &regular_file, zeroOffset);
         current = current->next;
     }
 
@@ -88,13 +99,23 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
 int operations_read(const char *path, char *buf, size_t size,
     off_t offset, struct Node *llHead)
 {
-    // ex: path: "/example.com"
-    // ex: pathNoSlash: "example.com"
-    char *pathCopy = strdup(path);
-    // '/' is not allowed in file name, so have user type in '\'. Replace it here:
-    util_replaceChar(pathCopy, '\\', '/');
+    Node *existingNode = llFindNode(llHead, path + 1);
+    const char *pathNoSlash = NULL;
+    char *pathCopy = NULL;
+    if (existingNode)
+    {
+        pathNoSlash = existingNode->url;
+    }
+    else
+    {
+        // ex: path: "/example.com"
+        // ex: pathNoSlash: "example.com"
+        pathCopy = strdup(path);
+        // '/' is not allowed in file name, so have user type in '\'. Replace it here:
+        util_replaceChar(pathCopy, '\\', '/');
+        pathNoSlash = pathCopy + 1;
+    }
 
-    const char *pathNoSlash = pathCopy + 1;
     char filename[PATH_MAX] = {};
     util_urlToFileName(filename, pathNoSlash);
     int len = 0;
