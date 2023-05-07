@@ -10,6 +10,6 @@ bool util_downloadURL(const char *url, const char *filename);
 // Note: caller must free(buffer)
 char* util_readEntireFile(const char *filename);
 
-void util_getMountPoint(char *mountPoint, size_t size, int argc, char *argv[]);
+bool util_isURL(const char *url);
 
 #endif

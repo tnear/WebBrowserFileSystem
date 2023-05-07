@@ -43,9 +43,6 @@ struct fuse_operations urlfsOperations = {
 
 int main(int argc, char* argv[])
 {
-    util_getMountPoint(g_mountDir, sizeof(g_mountDir), argc, argv);
-    printf("Mount dir: %s\n", g_mountDir);
-
     void *userData = NULL;
     return fuse_main(argc, argv, &urlfsOperations, userData);
 }

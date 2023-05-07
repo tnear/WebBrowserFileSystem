@@ -60,10 +60,6 @@ bool util_downloadURL(const char *url, const char *filename)
         return false;
     }
 
-    char *absPath = realpath(filename, NULL);
-    printf("D/L url: %s\n", absPath);
-    free(absPath);
-
     // cleanup curl
     curl_easy_cleanup(curl);
 
@@ -73,26 +69,15 @@ bool util_downloadURL(const char *url, const char *filename)
     return true;
 }
 
-void util_getMountPoint(char *mountPoint, size_t size, int argc, char *argv[])
+bool util_isURL(const char *url)
 {
-    // get pwd (ex: /home/user/fuse)
-    char pwd[PATH_MAX];
-    getcwd(pwd, sizeof(pwd));
+    if (url[0] == '.')
+        return false; // ignore hidden files
 
-    // copy pwd to mountPoint
-    strcpy(mountPoint, pwd);
+    char dot[] = ".";
+    char *ret = strstr(url, dot);
+    if (!ret)
+        return false; // URLs must contain a '.'
 
-    // get mount point, ex: "mnt/"
-    char *localMountPoint = argv[argc - 1];
-    int len = strlen(localMountPoint);
-    
-    // verify mount point ends with '/'
-    assert(localMountPoint[len - 1] == '/');
-    
-    // concat everything
-    // ex: /home/user/fuse + "/" + "mnt/"
-    strcat(mountPoint, "/");
-    strcat(mountPoint, localMountPoint);
-
-    // mountPoint should now look like: "/home/user/fuse/mnt/"
+    return true;
 }

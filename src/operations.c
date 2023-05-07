@@ -2,6 +2,7 @@
 #include "linkedList.h"
 #include "util.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -20,7 +21,14 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
     }
 
     const char *pathNoSlash = path + 1; // Account for leading "/", ex: "/file.html"
+    if (!util_isURL(pathNoSlash))
+    {
+        // not URL, don't waste time networking
+        return 0;
+    }
 
+    printf(pathNoSlash);
+    printf("\n");
     /*
     optimizing for existing files cause issues with 
     writing to one directory up and locking up filesystem.
@@ -50,6 +58,16 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
 
     // Read into buffer
     char *contents = util_readEntireFile(pathNoSlash);
+
+    // copy file attributes
+    struct stat localBuf;
+    int ret = stat(pathNoSlash, &localBuf);
+    assert(ret == 0);
+
+    // deep copy to stbuf argument
+    memcpy(stbuf, &localBuf, sizeof(struct stat));
+
+    // remove file
     remove(pathNoSlash);
 
     stbuf->st_size = strlen(contents);

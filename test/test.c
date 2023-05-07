@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -157,6 +158,11 @@ void testGetAttrURL()
     assert(st.st_size >= 1000 && st.st_size <= 10000);
     // verify read/write/execute permissions
     assert(st.st_mode == (S_IFREG | 0777));
+
+    // verify timestamp
+    time_t currentTime = time(NULL);
+    assert(st.st_mtime > 0);
+    assert(currentTime - st.st_mtime <= 5);
 }
 
 int g_testFillerCallCount = 0;
@@ -249,13 +255,19 @@ void testReadNoFiles()
     assert(ret == -ENOENT);
 }
 
-void testGetMountPoint()
+void testIsURL()
 {
-    char pwd[PATH_MAX] = {};
-    char *argv[] = {"a", "b", "mnt/"};
+    // URLs
+    assert(util_isURL("google.com"));
     
-    util_getMountPoint(pwd, sizeof(pwd), 3, argv);
-    assert(strcmp(pwd, "/home/kali/fuse/test/mnt/") == 0);
+    // Not URLs
+    assert(!util_isURL(".com"));
+    assert(!util_isURL("com"));
+}
+
+void testSlash()
+{
+
 }
 
 int main()
@@ -271,7 +283,7 @@ int main()
     testReadDirFiles();
     testRead();
     testReadNoFiles();
-    testGetMountPoint();
+    testIsURL();
 
     printf("Tests passed!\n");
     return 0;
