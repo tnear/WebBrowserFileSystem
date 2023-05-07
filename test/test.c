@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -101,9 +102,13 @@ void testLinkedList()
 
 void testGetAttrFileExists()
 {
+    // Create test directory
+    int ret = mkdir("mnt", 0700);
+    assert(ret == 0);
+    
     // create file
-    char full_filename[] = "/filePath.txt";
-    char *filename = full_filename + 1; // ignore leading slash
+    char fileNameSlashPrefix[] = "/filePath.txt";
+    char *filename = "mnt/filePath.txt";
     FILE *fp = fopen(filename, "w");
 
     // write data
@@ -116,30 +121,45 @@ void testGetAttrFileExists()
 
     Node *llHead = NULL;
 
-    int ret = operations_getattr(full_filename, &st, &llHead);
+    char mountDir[PATH_MAX] = {};
+    getcwd(mountDir, sizeof(mountDir));
+    strcat(mountDir, "/mnt/");
+
+    ret = operations_getattr(fileNameSlashPrefix, mountDir, &st, &llHead);
     const bool fileExists = access(filename, F_OK) == 0;
     assert(fileExists);
 
+    // cleanup
     remove(filename);
+    assert(rmdir("mnt") == 0);
 
     // verify successful call
     assert(ret == 0);
 
     // verify file attributes
     assert(st.st_size == 12);
-    assert(st.st_mode == (S_IFREG | 0400));
+    // verify read/write/execute permissions
+    assert(st.st_mode == (S_IFREG | 0777));
 }
 
 void testGetAttrURL()
 {
-    char *full_filename = "/www.example.com";
-    char *filename = full_filename + 1; // ignore leading slash
+    // Create test directory
+    int ret = mkdir("mnt", 0700);
+    assert(ret == 0);
+
+    char *fileNameSlashPrefix = "/www.example.com";
+    char *filename = "mnt/www.example.com";
 
     struct stat st;
     memset(&st, 0, sizeof(st));
-
     Node *llHead = NULL;
-    int ret = operations_getattr(full_filename, &st, &llHead);
+
+    char mountDir[PATH_MAX] = {};
+    getcwd(mountDir, sizeof(mountDir));
+    strcat(mountDir, "/mnt/");
+
+    ret = operations_getattr(fileNameSlashPrefix, mountDir, &st, &llHead);
 
     // verify file was created
     const bool fileExists = access(filename, F_OK) == 0;
@@ -149,13 +169,17 @@ void testGetAttrURL()
     char *contents = util_readEntireFile(filename);
     assert(strstr(contents, "<!doctype html>") != 0);
     assert(strstr(contents, "</html>") != 0);
+
+    // cleanup
     free(contents);
     remove(filename);
+    assert(rmdir("mnt") == 0);
     
     // verify getattr result
     assert(ret == 0);
     assert(st.st_size >= 1000 && st.st_size <= 10000);
-    assert(st.st_mode == (S_IFREG | 0400));
+    // verify read/write/execute permissions
+    assert(st.st_mode == (S_IFREG | 0777));
 }
 
 int g_testFillerCallCount = 0;
@@ -247,6 +271,15 @@ void testReadNoFiles()
     assert(ret == -ENOENT);
 }
 
+void testGetMountPoint()
+{
+    char pwd[PATH_MAX] = {};
+    char *argv[] = {"a", "b", "mnt/"};
+    
+    util_getMountPoint(pwd, sizeof(pwd), 3, argv);
+    assert(strcmp(pwd, "/home/kali/fuse/test/mnt/") == 0);
+}
+
 int main()
 {
     testDownloadURL();
@@ -260,6 +293,7 @@ int main()
     testReadDirFiles();
     testRead();
     testReadNoFiles();
+    testGetMountPoint();
 
     printf("Tests passed!\n");
     return 0;

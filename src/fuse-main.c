@@ -2,8 +2,10 @@
 
 #include "operations.h"
 #include "linkedList.h"
+#include "util.h"
 
 #include <fuse.h>
+#include <limits.h>
 #include <stdio.h>
 
 // https://www.youtube.com/watch?v=LZCILvr5tUk
@@ -11,11 +13,12 @@
 // global variable for start of linked list
 // Todo: make it non-global
 Node *llHead = NULL;
+char g_mountDir[PATH_MAX] = {};
 
 // Get file attributes. Similar to stat().
 int urlfs_getattr(const char *path, struct stat *stbuf)
 {
-    return operations_getattr(path, stbuf, &llHead);
+    return operations_getattr(path, g_mountDir, stbuf, &llHead);
 }
 
 // Read directory
@@ -40,7 +43,9 @@ struct fuse_operations urlfsOperations = {
 
 int main(int argc, char* argv[])
 {
-    printf("main4\n");
+    util_getMountPoint(g_mountDir, sizeof(g_mountDir), argc, argv);
+    printf("Mount dir: %s\n", g_mountDir);
+
     void *userData = NULL;
     return fuse_main(argc, argv, &urlfsOperations, userData);
 }

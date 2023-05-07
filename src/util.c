@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <curl/curl.h>
 
 // Note: caller must free(buffer)
@@ -58,6 +60,10 @@ bool util_downloadURL(const char *url, const char *filename)
         return false;
     }
 
+    char *absPath = realpath(filename, NULL);
+    printf("%s\n", absPath);
+    free(absPath);
+
     // cleanup curl
     curl_easy_cleanup(curl);
 
@@ -65,4 +71,28 @@ bool util_downloadURL(const char *url, const char *filename)
     fclose(file);
 
     return true;
+}
+
+void util_getMountPoint(char *mountPoint, size_t size, int argc, char *argv[])
+{
+    // get pwd (ex: /home/user/fuse)
+    char pwd[PATH_MAX];
+    getcwd(pwd, sizeof(pwd));
+
+    // copy pwd to mountPoint
+    strcpy(mountPoint, pwd);
+
+    // get mount point, ex: "mnt/"
+    char *localMountPoint = argv[argc - 1];
+    int len = strlen(localMountPoint);
+    
+    // verify mount point ends with '/'
+    assert(localMountPoint[len - 1] == '/');
+    
+    // concat everything
+    // ex: /home/user/fuse + "/" + "mnt/"
+    strcat(mountPoint, "/");
+    strcat(mountPoint, localMountPoint);
+
+    // mountPoint should now look like: "/home/user/fuse/mnt/"
 }
