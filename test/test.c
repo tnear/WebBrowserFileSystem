@@ -3,6 +3,7 @@
 #include "../src/util.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -147,6 +148,7 @@ void testGetAttrURL()
     // verify file contents
     char *contents = util_readEntireFile(filename);
     assert(strstr(contents, "<!doctype html>") != 0);
+    assert(strstr(contents, "</html>") != 0);
     free(contents);
     remove(filename);
     
@@ -201,6 +203,50 @@ void testReadDirFiles()
     assert(ret == 0);
 }
 
+void testRead()
+{
+    char filename[] = "/www.example.com";
+    char *contents = malloc(2048);
+
+    size_t size = 0; // unused
+    off_t offset = 0; // unused
+
+    // init linked list with www.example.com
+    Node *llHead = NULL;
+    llInsertNode(&llHead, filename + 1); // +1 to trim slash
+
+    // read file, return length
+    int fileLength = operations_read(filename, contents, size, offset, llHead);
+    int strLength = strlen(contents);
+
+    remove(filename);
+
+    // verify length and file contents
+    assert(strstr(contents, "<!doctype html>") != 0);
+    assert(strstr(contents, "</html>") != 0);
+    free(contents);
+    assert(strLength == fileLength);
+    assert(fileLength >= 1024 && fileLength <= 2048);
+}
+
+void testReadNoFiles()
+{
+    char filename[] = "/www.example.com";
+    char *contents = NULL;
+
+    size_t size = 0; // unused
+    off_t offset = 0; // unused
+
+    // init linked list with www.example.com
+    Node *llHead = NULL;
+
+    int ret = operations_read(filename, contents, size, offset, llHead);
+
+    // verify result
+    //free(contents);
+    assert(ret == -ENOENT);
+}
+
 int main()
 {
     testDownloadURL();
@@ -212,6 +258,8 @@ int main()
     testGetAttrURL();
     testReadDirRoot();
     testReadDirFiles();
+    testRead();
+    testReadNoFiles();
 
     printf("Tests passed!\n");
     return 0;

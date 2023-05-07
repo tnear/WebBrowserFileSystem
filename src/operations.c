@@ -1,6 +1,7 @@
 #include "operations.h"
 #include "linkedList.h"
 #include "util.h"
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,4 +72,25 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t off
     }
 
     return 0;
+}
+
+int operations_read(const char *path, char *buf, size_t size, off_t offset, struct Node *llHead)
+{
+    const char *pathNoSlash = path + 1;
+    if (!llContainsString(llHead, pathNoSlash))
+    {
+        // cannot find this file
+        return -ENOENT;
+    }
+
+    util_downloadURL(pathNoSlash, pathNoSlash);
+    
+    // Read file into buffer
+    char *contents = util_readEntireFile(pathNoSlash);
+
+    // Copy to buffer
+    strcpy(buf, contents);
+    size_t len = strlen(contents);
+    free(contents);
+    return len;
 }
