@@ -161,6 +161,10 @@ void testGetAttrURL()
 
     ret = operations_getattr(fileNameSlashPrefix, mountDir, &st, &llHead);
 
+    // verify linked list is correct
+    assert(llGetLength(llHead) == 1);
+    llContainsString(llHead, fileNameSlashPrefix + 1);
+
     // verify file was created
     const bool fileExists = access(filename, F_OK) == 0;
     assert(fileExists);
@@ -229,7 +233,13 @@ void testReadDirFiles()
 
 void testRead()
 {
-    char filename[] = "/www.example.com";
+    // create test directory
+    assert(mkdir("mnt", 0700) == 0);
+
+    char filenameSlash[] = "/www.example.com";
+    char *filenameNoSlash = filenameSlash + 1; // +1 to trim slash
+    char absPath[] = "mnt/www.example.com";
+
     char *contents = malloc(2048);
 
     size_t size = 0; // unused
@@ -237,13 +247,19 @@ void testRead()
 
     // init linked list with www.example.com
     Node *llHead = NULL;
-    llInsertNode(&llHead, filename + 1); // +1 to trim slash
+    llInsertNode(&llHead, filenameNoSlash);
+
+    // create mount dir for testing
+    char mountDir[PATH_MAX] = {};
+    getcwd(mountDir, sizeof(mountDir));
+    strcat(mountDir, "/mnt/");
 
     // read file, return length
-    int fileLength = operations_read(filename, contents, size, offset, llHead);
+    int fileLength = operations_read(filenameSlash, mountDir, contents, size, offset, llHead);
     int strLength = strlen(contents);
 
-    remove(filename);
+    remove(absPath);
+    assert(rmdir("mnt") == 0);
 
     // verify length and file contents
     assert(strstr(contents, "<!doctype html>") != 0);
@@ -264,7 +280,11 @@ void testReadNoFiles()
     // init linked list with www.example.com
     Node *llHead = NULL;
 
-    int ret = operations_read(filename, contents, size, offset, llHead);
+    char mountDir[PATH_MAX] = {};
+    getcwd(mountDir, sizeof(mountDir));
+    strcat(mountDir, "/mnt/");
+
+    int ret = operations_read(filename, mountDir, contents, size, offset, llHead);
 
     // verify result
     //free(contents);

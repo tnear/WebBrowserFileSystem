@@ -61,7 +61,7 @@ bool util_downloadURL(const char *url, const char *filename)
     }
 
     char *absPath = realpath(filename, NULL);
-    printf("%s\n", absPath);
+    printf("D/L url: %s\n", absPath);
     free(absPath);
 
     // cleanup curl

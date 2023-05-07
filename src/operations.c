@@ -24,6 +24,7 @@ int operations_getattr(const char *path, const char *mountDir, struct stat *stbu
 
     // mountDir ex: "/home/.../mnt/"
 
+    // absPath: [mountDir, path]
     char absPath[PATH_MAX] = {};
     strcat(absPath, mountDir);
     strcat(absPath, pathNoSlash);
@@ -49,8 +50,8 @@ int operations_getattr(const char *path, const char *mountDir, struct stat *stbu
         return 0;
     }
 
-    printf("Inserting\n");
-    llInsertNodeIfDoesntExist(llHead, absPath);
+    printf("Inserting...\n");
+    llInsertNodeIfDoesntExist(llHead, pathNoSlash);
 
     // Read into buffer
     char *contents = util_readEntireFile(absPath);
@@ -62,7 +63,8 @@ int operations_getattr(const char *path, const char *mountDir, struct stat *stbu
     return 0;
 }
 
-int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t offset, struct Node *llHead)
+int operations_readdir(const char *path, void *buf, fill_dir_t filler,
+    off_t offset, struct Node *llHead)
 {
     if (strcmp(path, "/") != 0)
     {
@@ -84,8 +86,11 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t off
     return 0;
 }
 
-int operations_read(const char *path, char *buf, size_t size, off_t offset, struct Node *llHead)
+int operations_read(const char *path, const char *mountDir, char *buf, size_t size,
+    off_t offset, struct Node *llHead)
 {
+    // ex: path: "/example.com"
+    // ex: pathNoSlash: "example.com"
     const char *pathNoSlash = path + 1;
     if (!llContainsString(llHead, pathNoSlash))
     {
@@ -93,10 +98,15 @@ int operations_read(const char *path, char *buf, size_t size, off_t offset, stru
         return -ENOENT;
     }
 
-    util_downloadURL(pathNoSlash, pathNoSlash);
+    // absPath: [mountDir, path]
+    char absPath[PATH_MAX] = {};
+    strcat(absPath, mountDir);
+    strcat(absPath, pathNoSlash);
+
+    util_downloadURL(pathNoSlash, absPath);
     
     // Read file into buffer
-    char *contents = util_readEntireFile(pathNoSlash);
+    char *contents = util_readEntireFile(absPath);
 
     // Copy to buffer
     strcpy(buf, contents);

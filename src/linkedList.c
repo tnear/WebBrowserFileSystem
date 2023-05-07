@@ -44,19 +44,6 @@ void llInsertNodeIfDoesntExist(Node **head, const char *data)
     llInsertNode(head, data);
 }
 
-/*
-void displayList(const Node *head)
-{
-    const Node *current = head;
-    while (current != NULL)
-    {
-        printf("%s ", current->data);
-        current = current->next;
-    }
-    printf("\n");
-}
-*/
-
 // Free the memory allocated for the linked list
 void llFreeList(Node *head)
 {

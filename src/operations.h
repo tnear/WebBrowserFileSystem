@@ -17,6 +17,7 @@ int operations_getattr(const char *path, const char *mountDir, struct stat *stbu
 
 int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t offset, struct Node *llHead);
 
-int operations_read(const char *path, char *buf, size_t size, off_t offset, struct Node *llHead);
+int operations_read(const char *path, const char *mountDir, char *buf, size_t size,
+    off_t offset, struct Node *llHead);
 
 #endif
