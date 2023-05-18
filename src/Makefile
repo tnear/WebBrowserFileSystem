@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -g
 # lcurl needed for curl, `...fuse` needed for fuse
-LDFLAGS = -lcurl `pkg-config --libs --cflags fuse`
+LDFLAGS = -lcurl `pkg-config --libs --cflags fuse` -lsqlite3
 
 # C-files
-SRCS = fuse-main.c util.c linkedList.c operations.c
+SRCS = fuse-main.c util.c linkedList.c operations.c sqlite.c
 
 # Mapping of .c -> .o files
 OBJS = $(SRCS:.c=.o)

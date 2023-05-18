@@ -35,7 +35,8 @@ int urlfs_read(const char *path, char *buf, size_t size, off_t offset,
     return operations_read(path, buf, size, offset, llHead);
 }
 
-struct fuse_operations urlfsOperations = {
+struct fuse_operations urlfsOperations =
+{
     .getattr = urlfs_getattr,
     .read    = urlfs_read,
     .readdir = urlfs_readdir

@@ -1,9 +1,9 @@
 CC = gcc
 CFLAGS = -g
-LDFLAGS = -lcurl
+LDFLAGS = -lcurl -lsqlite3
 
 # C-files
-SRCS = test.c ../src/util.c ../src/linkedList.c ../src/operations.c
+SRCS = test.c ../src/util.c ../src/linkedList.c ../src/operations.c ../src/sqlite.c
 
 # Mapping of .c -> .o files
 OBJS = $(SRCS:.c=.o)

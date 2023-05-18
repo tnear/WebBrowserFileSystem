@@ -11,6 +11,10 @@
         "limits": "c",
         "numeric": "c",
         "streambuf": "c",
-        "functional": "c"
+        "functional": "c",
+        "random": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "atomic": "c"
     }
 }

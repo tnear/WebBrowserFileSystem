@@ -1,5 +1,6 @@
 #include "../src/linkedList.h"
 #include "../src/operations.h"
+#include "../src/sqlite.h"
 #include "../src/util.h"
 
 #include <assert.h>
@@ -210,9 +211,6 @@ void testRead()
 
 void testReadBackslash()
 {
-    //char filename[] = "/www.example.com\\path\\";
-    //char *filenameNoSlash = filename + 1;
-
     // allocate sufficient space
     char *contents = calloc(4096, 1);
 
@@ -230,9 +228,11 @@ void testReadBackslash()
     // verify length and file contents
     assert(strstr(contents, "<!doctype html>") != 0);
     assert(strstr(contents, "</html>") != 0);
-    free(contents);
     assert(strLength == fileLength);
     assert(fileLength >= 1024 && fileLength <= 2048);
+
+    // cleanup
+    free(contents);
 }
 
 /*
@@ -346,9 +346,19 @@ void testReplaceChar()
     }
 }
 
-void testSlash()
+void testCreateDatabase()
 {
+    sqlite3 *db = createDatabase();
+    assert(db);
 
+    int ret = _createWebsiteTable(db);
+    assert(ret == SQLITE_OK);
+
+    ret = insertRow(db);
+    assert(ret == SQLITE_OK);
+
+    sqlite3_close(db);
+    printf("here\n");
 }
 
 int main()
@@ -366,6 +376,9 @@ int main()
     testIsURL();
     testUrlToFileName();
     testReplaceChar();
+
+    // sqlite tests
+    testCreateDatabase();
 
     printf("Tests passed!\n");
     return 0;
