@@ -351,14 +351,20 @@ void testCreateDatabase()
     sqlite3 *db = createDatabase();
     assert(db);
 
+    char url[] = "www.example.com";
+
     int ret = _createWebsiteTable(db);
     assert(ret == SQLITE_OK);
 
     ret = insertRow(db);
     assert(ret == SQLITE_OK);
 
+    char *contents = getFileData(db, url);
+    assert(strcmp(contents, "<HTML>") == 0);
+
+    // cleanup
+    free(contents);
     sqlite3_close(db);
-    printf("here\n");
 }
 
 int main()

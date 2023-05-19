@@ -6,6 +6,6 @@
 sqlite3* createDatabase();
 int _createWebsiteTable(sqlite3 *db);
 int insertRow(sqlite3 *db);
-//char* getFileData();
+char* getFileData(sqlite3 *db, const char *url);
 
 #endif
