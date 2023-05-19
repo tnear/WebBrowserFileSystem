@@ -2,6 +2,7 @@
 #include "../src/operations.h"
 #include "../src/sqlite.h"
 #include "../src/util.h"
+#include "../src/website.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -346,25 +347,49 @@ void testReplaceChar()
     }
 }
 
+void testWebsite()
+{
+    char url[] = "www.example.com";
+    char path[] = "example";
+    char html[] = "<HTML>";
+
+    struct Website *website = createWebsite(url, path, html);
+
+    assert(strcmp(website->url, url) == 0);
+    assert(strcmp(website->path, path) == 0);
+    assert(strcmp(website->html, html) == 0);
+
+    deleteWebsite(website);
+}
+
 void testCreateDatabase()
 {
     sqlite3 *db = createDatabase();
     assert(db);
 
-    char url[] = "www.example.com";
+    const char url[] = "www.example.com";
+    const char path[] = "example";
+    const char html[] = "<HTML></HTML>";
 
     int ret = _createWebsiteTable(db);
     assert(ret == SQLITE_OK);
 
-    ret = insertRow(db);
+    struct Website *website = createWebsite(url, path, html);
+
+    ret = insertRow(db, website);
     assert(ret == SQLITE_OK);
 
-    char *contents = getFileData(db, url);
-    assert(strcmp(contents, "<HTML>") == 0);
+    char *contents = getHtmlData(db, url);
+    assert(strcmp(contents, html) == 0);
+
+    // fake url (returns NULL)
+    char *fake = getHtmlData(db, "fake_url");
+    assert(!fake);
 
     // cleanup
     free(contents);
     sqlite3_close(db);
+    deleteWebsite(website);
 }
 
 int main()
@@ -384,6 +409,7 @@ int main()
     testReplaceChar();
 
     // sqlite tests
+    testWebsite();
     testCreateDatabase();
 
     printf("Tests passed!\n");

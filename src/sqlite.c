@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "website.h"
+
+#define WEBSITE "Website"
+
 sqlite3* createDatabase()
 {
     sqlite3 *db = NULL;
@@ -17,33 +21,28 @@ sqlite3* createDatabase()
 
 int _createWebsiteTable(sqlite3 *db)
 {
-    const char* createTableQuery = "create table if not exists Website ("\
+    const char* createTableQuery = "create table if not exists " WEBSITE " ("\
         "URL   text primary key," \
         "PATH  text not null," \
         "HTML  text not null);";
 
-    char* errMsg = 0;
-    int rc = sqlite3_exec(db, createTableQuery, 0, 0, &errMsg);
+    int rc = sqlite3_exec(db, createTableQuery, 0, 0, NULL);
     assert(rc == SQLITE_OK);
     return rc;
 }
 
-int insertRow(sqlite3 *db)
+int insertRow(sqlite3 *db, struct Website *website)
 {
-    const char *insertQuery = "insert into Website (URL, PATH, HTML) values (?, ?, ?);";
+    const char *insertQuery = "insert into " WEBSITE " (URL, PATH, HTML) values (?, ?, ?);";
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, 0);
     assert(rc == SQLITE_OK);
 
-    const char *url = "www.example.com";
-    const char *path = "example";
-    const char *html = "<HTML>";
-
     // Bind values to the prepared statement
     int idx = 1;
-    sqlite3_bind_text(stmt, idx++, url,  -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, idx++, path, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, idx++, html, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, idx++, website->url,  -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, idx++, website->path, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, idx++, website->html, -1, SQLITE_STATIC);
 
     // Execute the prepared statement
     rc = sqlite3_step(stmt);
@@ -56,10 +55,10 @@ int insertRow(sqlite3 *db)
 }
 
 // note: caller must free(buffer)
-char* getFileData(sqlite3 *db, const char *url)
+char* getHtmlData(sqlite3 *db, const char *url)
 {
     char *buffer = NULL;
-    const char sql[] = "select HTML from Website where URL = ?;";
+    const char sql[] = "select HTML from " WEBSITE " where URL = ?;";
     
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
@@ -67,15 +66,19 @@ char* getFileData(sqlite3 *db, const char *url)
     
     sqlite3_bind_text(stmt, 1, url, -1, SQLITE_STATIC);
 
+    int count = 0;
+
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
-        const char *name = sqlite3_column_text(stmt, 0);
-        int len = strlen(name);
+        ++count;
+        const char *contents = sqlite3_column_text(stmt, 0);
+        int len = strlen(contents);
         buffer = malloc(len + 1);
         buffer[len] = '\0';
-        strcpy(buffer, name);
+        strcpy(buffer, contents);
     }
     
+    assert(count <= 1);
     assert(rc == SQLITE_DONE);
     sqlite3_finalize(stmt);
 

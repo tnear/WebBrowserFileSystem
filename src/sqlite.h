@@ -3,9 +3,11 @@
 
 #include <sqlite3.h>
 
+struct Website;
+
 sqlite3* createDatabase();
 int _createWebsiteTable(sqlite3 *db);
-int insertRow(sqlite3 *db);
-char* getFileData(sqlite3 *db, const char *url);
+int insertRow(sqlite3 *db, struct Website *website);
+char* getHtmlData(sqlite3 *db, const char *url);
 
 #endif
