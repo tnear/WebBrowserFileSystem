@@ -350,29 +350,53 @@ void testWebsite()
 void testCreateDatabase()
 {
     sqlite3 *db = createDatabase();
-    assert(db);
 
     const char url[] = "www.example.com";
     const char path[] = "example";
     const char html[] = "<HTML></HTML>";
 
-    int ret = _createWebsiteTable(db);
-    assert(ret == SQLITE_OK);
-
     Website *website = createWebsite(url, path, html);
 
-    ret = insertRow(db, website);
+    int ret = insertRow(db, website);
     assert(ret == SQLITE_OK);
 
-    char *contents = getHtmlData(db, url);
-    assert(strcmp(contents, html) == 0);
+    // lookup existing website and verify contents
+    Website *wLookup = lookupWebsite(db, url);
+    assert(strcmp(wLookup->url, url) == 0);
+    assert(strcmp(wLookup->path, path) == 0);
+    assert(strcmp(wLookup->html, html) == 0);
 
     // fake url (returns NULL)
-    char *fake = getHtmlData(db, "fake_url");
+    Website *fake = lookupWebsite(db, "fake_url");
     assert(!fake);
 
     // cleanup
-    free(contents);
+    sqlite3_close(db);
+    deleteWebsite(website);
+    deleteWebsite(wLookup);
+}
+
+void testLookupURL()
+{
+    sqlite3 *db = createDatabase();
+
+    const char url[] = "www.example.com";
+    const char path[] = "example";
+    const char html[] = "<HTML></HTML>";
+
+    // lookup before inserting
+    assert(!lookupURL(db, url));
+
+    Website *website = createWebsite(url, path, html);
+    insertRow(db, website);
+
+    // lookup after inserting
+    assert(lookupURL(db, url));
+
+    // lookup fake url
+    assert(!lookupURL(db, "fake_url"));
+
+    // cleanup
     sqlite3_close(db);
     deleteWebsite(website);
 }
@@ -406,6 +430,7 @@ int main()
     // sqlite tests
     testWebsite();
     testCreateDatabase();
+    testLookupURL();
 
     testFuseData();
 

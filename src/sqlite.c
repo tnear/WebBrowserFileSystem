@@ -16,6 +16,9 @@ sqlite3* createDatabase()
     int rc = sqlite3_open(":memory:", &db);
     assert(rc == SQLITE_OK);
 
+    int ret = _createWebsiteTable(db);
+    assert(ret == SQLITE_OK);
+
     return db;
 }
 
@@ -54,33 +57,76 @@ int insertRow(sqlite3 *db, Website *website)
     return SQLITE_OK;
 }
 
-// note: caller must free(buffer)
-char* getHtmlData(sqlite3 *db, const char *url)
+// note: caller must deleteWebsite(website)
+Website* lookupWebsite(sqlite3 *db, const char *url)
 {
-    char *buffer = NULL;
-    const char sql[] = "select HTML from " WEBSITE " where URL = ?;";
+    Website *website = NULL;
+    char *path = NULL;
+    char *html = NULL;
+    const char sql[] = "select PATH,HTML from " WEBSITE " where URL = ?;";
     
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     assert(rc == SQLITE_OK);
     
-    sqlite3_bind_text(stmt, 1, url, -1, SQLITE_STATIC);
+    // bind values to prepared statement
+    int idx = 1;
+    sqlite3_bind_text(stmt, idx++, url, -1, SQLITE_STATIC);
 
     int count = 0;
 
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
         ++count;
-        const char *contents = sqlite3_column_text(stmt, 0);
-        int len = strlen(contents);
-        buffer = malloc(len + 1);
-        buffer[len] = '\0';
-        strcpy(buffer, contents);
+        const char *tempPath = sqlite3_column_text(stmt, 0);
+        int len = strlen(tempPath);
+        path = malloc(len + 1);
+        path[len] = '\0';
+        strcpy(path, tempPath);
+
+        const char *tempHtml = sqlite3_column_text(stmt, 1);
+        len = strlen(tempHtml);
+        html = malloc(len + 1);
+        html[len] = '\0';
+        strcpy(html, tempHtml);
     }
     
-    assert(count <= 1);
     assert(rc == SQLITE_DONE);
+    assert(count <= 1);
+
+    if (count == 1)
+    {
+        website = createWebsite(url, path, html);
+    }
+    
     sqlite3_finalize(stmt);
 
-    return buffer;
+    return website;
+}
+
+bool lookupURL(sqlite3 *db, const char *url)
+{
+    char *path = NULL;
+    char *html = NULL;
+    const char sql[] = "select count(*) from " WEBSITE " where URL = ?;";
+    
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    assert(rc == SQLITE_OK);
+    
+    // bind values to prepared statement
+    int idx = 1;
+    sqlite3_bind_text(stmt, idx++, url, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    assert(rc == SQLITE_ROW);
+
+    // get count
+    int count = sqlite3_column_int(stmt, 0);
+    assert(count <= 1);
+
+    sqlite3_finalize(stmt);
+
+    // return true when finding the URL
+    return count > 0;
 }

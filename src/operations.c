@@ -1,7 +1,9 @@
 #include "operations.h"
 #include "fuseData.h"
 #include "linkedList.h"
+#include "sqlite.h"
 #include "util.h"
+#include "website.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -111,10 +113,12 @@ int operations_read(const char *fusePath, char *buf, size_t size,
 char *getURL(const char *fusePath, FuseData *fuseData)
 {
     char *pathNoSlash = NULL;
+    // Website *website = lookupWebsite(fuseData->db, fusePath + 1);
     Node *existingNode = llFindNode(fuseData->llHead, fusePath + 1);
     if (existingNode)
     {
         pathNoSlash = strdup(existingNode->url);
+        //pathNoSlash = strdup(website->url);
     }
     else
     {

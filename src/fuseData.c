@@ -10,3 +10,12 @@ FuseData* initFuseData()
 
     return fuseData;
 }
+
+void deleteFuseData(FuseData *fuseData)
+{
+    // close database
+    sqlite3_close(fuseData->db);
+
+    // free memory
+    free(fuseData);
+}

@@ -12,5 +12,6 @@ typedef struct FuseData
 } FuseData;
 
 FuseData* initFuseData();
+void deleteFuseData(FuseData *fuseData);
 
 #endif

@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     int ret = fuse_main(argc, argv, &urlfsOperations, NULL);
 
     // cleanup
-    free(g_fuseData);
+    deleteFuseData(g_fuseData);
     printf("\n\nfuse-main exiting...\n");
 
     return ret;
