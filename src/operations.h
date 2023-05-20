@@ -12,14 +12,14 @@ static struct stat regular_file =
 typedef int (*fill_dir_t) (void *buf, const char *name,
 				const struct stat *stbuf, off_t off);
 
-struct Node;
-int operations_getattr(const char *path, struct stat *stbuf, struct Node **llHead);
+struct FuseData;
+int operations_getattr(const char *path, struct stat *stbuf, struct FuseData *fuseData);
 
-int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t offset, struct Node *llHead);
+int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t offset, struct FuseData *fuseData);
 
 int operations_read(const char *path, char *buf, size_t size,
-    off_t offset, struct Node *llHead);
+    off_t offset, struct FuseData *fuseData);
 
-char *getURL(const char *fusePath, struct Node *llHead);
+char *getURL(const char *fusePath, struct FuseData *fuseData);
 
 #endif

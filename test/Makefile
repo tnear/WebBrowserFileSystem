@@ -3,7 +3,7 @@ CFLAGS = -g
 LDFLAGS = -lcurl -lsqlite3
 
 # C-files
-SRCS = test.c ../src/util.c ../src/linkedList.c ../src/operations.c ../src/sqlite.c ../src/website.c
+SRCS = test.c ../src/util.c ../src/linkedList.c ../src/operations.c ../src/sqlite.c ../src/website.c ../src/fuseData.c
 
 # Mapping of .c -> .o files
 OBJS = $(SRCS:.c=.o)

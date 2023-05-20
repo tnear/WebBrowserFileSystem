@@ -1,14 +1,14 @@
 #ifndef WEBSITE_H
 #define WEBSITE_H
 
-struct Website
+typedef struct Website
 {
     char *url;
     char *path;
     char *html;
-};
+} Website;
 
-struct Website* createWebsite(const char *url, const char *path, const char *html);
-void deleteWebsite(struct Website *website);
+Website* createWebsite(const char *url, const char *path, const char *html);
+void deleteWebsite(Website *website);
 
 #endif

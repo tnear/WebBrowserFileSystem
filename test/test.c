@@ -1,3 +1,4 @@
+#include "../src/fuseData.h"
 #include "../src/linkedList.h"
 #include "../src/operations.h"
 #include "../src/sqlite.h"
@@ -114,14 +115,14 @@ void testGetAttrURL()
 
     struct stat st;
     memset(&st, 0, sizeof(st));
-    Node *llHead = NULL;
+    FuseData *fuseData = initFuseData();
 
-    int ret = operations_getattr(full_filename, &st, &llHead);
+    int ret = operations_getattr(full_filename, &st, fuseData);
     assert(ret == 0);
 
     // verify linked list is correct
-    assert(llGetLength(llHead) == 1);
-    llContainsString(llHead, filename);
+    assert(llGetLength(fuseData->llHead) == 1);
+    llContainsString(fuseData->llHead, filename);
 
     // update: files are now transient
     const bool fileExists = access(filename, F_OK) == 0;
@@ -154,11 +155,11 @@ void testReadDirRoot()
     int (*filler)(void *buf, const char *name, const struct stat *stbuf, off_t off) = testFiller;
 
     off_t offset = 0;
-    Node *llHead = NULL;
-    llInsertNode(&llHead, "file1.txt", "file1.txt");
-    llInsertNode(&llHead, "file2.txt", "file2.txt");
+    FuseData *fuseData = initFuseData();
+    llInsertNode(&fuseData->llHead, "file1.txt", "file1.txt");
+    llInsertNode(&fuseData->llHead, "file2.txt", "file2.txt");
 
-    int ret = operations_readdir(filename, buf, testFiller, offset, llHead);
+    int ret = operations_readdir(filename, buf, testFiller, offset, fuseData);
 
     assert(g_testFillerCallCount == 2);
     assert(ret == 0);
@@ -175,12 +176,14 @@ void testReadDirFiles()
     int (*filler)(void *buf, const char *name, const struct stat *stbuf, off_t off) = testFiller;
 
     off_t offset = 0;
-    Node *llHead = NULL;
-    int ret = operations_readdir(filename, buf, testFiller, offset, llHead);
+    FuseData *fuseData = initFuseData();
+    int ret = operations_readdir(filename, buf, testFiller, offset, fuseData);
 
     // verify success and that buf was unchanged
     assert(g_testFillerCallCount == 0);
     assert(ret == 0);
+
+    free(fuseData);
 }
 
 void testRead()
@@ -195,11 +198,11 @@ void testRead()
     off_t offset = 0; // unused
 
     // init linked list with www.example.com
-    Node *llHead = NULL;
-    llInsertNode(&llHead, filenameNoSlash, filenameNoSlash);
+    FuseData *fuseData = initFuseData();
+    llInsertNode(&fuseData->llHead, filenameNoSlash, filenameNoSlash);
 
     // read file, return length
-    int fileLength = operations_read(filename, contents, size, offset, llHead);
+    int fileLength = operations_read(filename, contents, size, offset, fuseData);
     int strLength = strlen(contents);
 
     // verify length and file contents
@@ -208,6 +211,8 @@ void testRead()
     free(contents);
     assert(strLength == fileLength);
     assert(fileLength >= 1024 && fileLength <= 2048);
+
+    free(fuseData);
 }
 
 void testReadBackslash()
@@ -219,11 +224,11 @@ void testReadBackslash()
     off_t offset = 0; // unused
 
     // init linked list with www.example.com
-    Node *llHead = NULL;
-    llInsertNode(&llHead, "path", "www.example.com/path");
+    FuseData *fuseData = initFuseData();
+    llInsertNode(&fuseData->llHead, "path", "www.example.com/path");
 
     // read file, return length
-    int fileLength = operations_read("/path", contents, size, offset, llHead);
+    int fileLength = operations_read("/path", contents, size, offset, fuseData);
     int strLength = strlen(contents);
 
     // verify length and file contents
@@ -234,28 +239,8 @@ void testReadBackslash()
 
     // cleanup
     free(contents);
+    free(fuseData);
 }
-
-/*
-Unreachable?
-void testReadNoFiles()
-{
-    char filename[] = "/www.example.com";
-    char *contents = NULL;
-
-    size_t size = 0; // unused
-    off_t offset = 0; // unused
-
-    // init linked list with www.example.com
-    Node *llHead = NULL;
-
-    int ret = operations_read(filename, contents, size, offset, llHead);
-
-    // verify result
-    //free(contents);
-    assert(ret == -ENOENT);
-}
-*/
 
 void testIsURL()
 {
@@ -353,7 +338,7 @@ void testWebsite()
     char path[] = "example";
     char html[] = "<HTML>";
 
-    struct Website *website = createWebsite(url, path, html);
+    Website *website = createWebsite(url, path, html);
 
     assert(strcmp(website->url, url) == 0);
     assert(strcmp(website->path, path) == 0);
@@ -374,7 +359,7 @@ void testCreateDatabase()
     int ret = _createWebsiteTable(db);
     assert(ret == SQLITE_OK);
 
-    struct Website *website = createWebsite(url, path, html);
+    Website *website = createWebsite(url, path, html);
 
     ret = insertRow(db, website);
     assert(ret == SQLITE_OK);
@@ -390,6 +375,16 @@ void testCreateDatabase()
     free(contents);
     sqlite3_close(db);
     deleteWebsite(website);
+}
+
+void testFuseData()
+{
+    FuseData *fuseData = initFuseData();
+    assert(!fuseData->llHead);
+    assert(fuseData->db);
+
+    // cleanup
+    free(fuseData);
 }
 
 int main()
@@ -411,6 +406,8 @@ int main()
     // sqlite tests
     testWebsite();
     testCreateDatabase();
+
+    testFuseData();
 
     printf("Tests passed!\n");
     return 0;

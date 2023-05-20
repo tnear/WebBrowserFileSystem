@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Website* createWebsite(const char *url, const char *path, const char *html)
+Website* createWebsite(const char *url, const char *path, const char *html)
 {
-    struct Website *website = malloc(sizeof(struct Website));
+    Website *website = malloc(sizeof(Website));
     website->url = malloc(strlen(url));
     strcpy(website->url, url);
     website->path = malloc(strlen(path));
@@ -15,7 +15,7 @@ struct Website* createWebsite(const char *url, const char *path, const char *htm
     return website;
 }
 
-void deleteWebsite(struct Website *website)
+void deleteWebsite(Website *website)
 {
     free(website->url);
     free(website->path);

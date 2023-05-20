@@ -1,4 +1,5 @@
 #include "operations.h"
+#include "fuseData.h"
 #include "linkedList.h"
 #include "util.h"
 
@@ -11,7 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 
-int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
+int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
 {
     if (strcmp(path, "/") == 0)
     {
@@ -20,7 +21,7 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
         return 0;
     }
 
-    char *url = getURL(path, *llHead);
+    char *url = getURL(path, fuseData);
 
     if (!util_isURL(url))
     {
@@ -36,7 +37,7 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
     {
         printf(url);
         printf("\n");
-        llInsertNodeIfDoesntExist(llHead, filename, url);
+        llInsertNodeIfDoesntExist(&fuseData->llHead, filename, url);
 
         // Read into buffer
         char *contents = util_readEntireFile(filename);
@@ -60,7 +61,7 @@ int operations_getattr(const char *path, struct stat *stbuf, Node **llHead)
 }
 
 int operations_readdir(const char *path, void *buf, fill_dir_t filler,
-    off_t offset, struct Node *llHead)
+    off_t offset, FuseData *fuseData)
 {
     if (strcmp(path, "/") != 0)
     {
@@ -72,7 +73,7 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     const off_t zeroOffset = 0;
 
     // fill all files added this session
-    Node *current = llHead;
+    Node *current = fuseData->llHead;
     while (current)
     {
         filler(buf, current->filename, &regular_file, zeroOffset);
@@ -83,15 +84,15 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
 }
 
 int operations_read(const char *fusePath, char *buf, size_t size,
-    off_t offset, struct Node *llHead)
+    off_t offset, FuseData *fuseData)
 {
-    char *url = getURL(fusePath, llHead);
+    char *url = getURL(fusePath, fuseData);
 
     char filename[PATH_MAX] = {};
     util_urlToFileName(filename, url);
     int len = 0;
 
-    assert(llContainsString(llHead, filename));
+    assert(llContainsString(fuseData->llHead, filename));
     util_downloadURL(url, filename);
 
     // Read file into buffer
@@ -107,10 +108,10 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     return len;
 }
 
-char *getURL(const char *fusePath, struct Node *llHead)
+char *getURL(const char *fusePath, FuseData *fuseData)
 {
     char *pathNoSlash = NULL;
-    Node *existingNode = llFindNode(llHead, fusePath + 1);
+    Node *existingNode = llFindNode(fuseData->llHead, fusePath + 1);
     if (existingNode)
     {
         pathNoSlash = strdup(existingNode->url);

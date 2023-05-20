@@ -31,7 +31,7 @@ int _createWebsiteTable(sqlite3 *db)
     return rc;
 }
 
-int insertRow(sqlite3 *db, struct Website *website)
+int insertRow(sqlite3 *db, Website *website)
 {
     const char *insertQuery = "insert into " WEBSITE " (URL, PATH, HTML) values (?, ?, ?);";
     sqlite3_stmt *stmt = NULL;
