@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <curl/curl.h>
 
 // Note: caller must free(buffer)
 char* util_readEntireFile(const char *filename)
@@ -33,7 +32,7 @@ char* util_readEntireFile(const char *filename)
     return buffer;
 }
 
-bool util_downloadURL(const char *url, const char *filename)
+CURLcode util_downloadURL(const char *url, const char *filename)
 {
     // open file for writing
     FILE *file = fopen(filename, "w");
@@ -57,7 +56,7 @@ bool util_downloadURL(const char *url, const char *filename)
     {
         // Delete file for failed downloads
         remove(filename);
-        return false;
+        return res;
     }
 
     // cleanup curl
@@ -66,7 +65,7 @@ bool util_downloadURL(const char *url, const char *filename)
     // close file handle
     fclose(file);
 
-    return true;
+    return res;
 }
 
 // very simple utility to determine quickly if a string might be a URL

@@ -13,14 +13,16 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <curl/curl.h>
 #include <sys/stat.h>
 
 void testDownloadURL()
 {
     char url[] = "http://example.com";
     char file[] = "example.html";
-    bool success = util_downloadURL(url, file);
-    assert(success);
+    CURLcode curlStatus = util_downloadURL(url, file);
+    assert(curlStatus == CURLE_OK);
 
     char *contents = util_readEntireFile(file);
 
@@ -39,8 +41,8 @@ void testInvalidURL()
     char file[] = "fake.html";
 
     // Verify failure
-    bool success = util_downloadURL(url, file);
-    assert(!success);
+    CURLcode curlStatus = util_downloadURL(url, file);
+    assert(curlStatus == CURLE_COULDNT_RESOLVE_HOST);
 
     // Verify no file was created
     assert(access(file, F_OK) != 0);
@@ -118,7 +120,7 @@ void testGetAttrURL()
     FuseData *fuseData = initFuseData();
 
     int ret = operations_getattr(full_filename, &st, fuseData);
-    assert(ret == 0);
+    assert(ret == CURLE_OK);
 
     // verify linked list is correct
     assert(llGetLength(fuseData->llHead) == 1);
@@ -137,6 +139,18 @@ void testGetAttrURL()
     time_t currentTime = time(NULL);
     assert(st.st_mtime > 0);
     assert(currentTime - st.st_mtime <= 5);
+}
+
+void testGetAttrFakeURL()
+{
+    char *full_filename = "/www.fake_url_example_123_xyz.net";
+
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+    FuseData *fuseData = initFuseData();
+
+    int ret = operations_getattr(full_filename, &st, fuseData);
+    assert(ret == CURLE_COULDNT_RESOLVE_HOST);
 }
 
 int g_testFillerCallCount = 0;
@@ -338,13 +352,13 @@ void testWebsite()
     char path[] = "example";
     char html[] = "<HTML>";
 
-    Website *website = createWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html);
 
     assert(strcmp(website->url, url) == 0);
     assert(strcmp(website->path, path) == 0);
     assert(strcmp(website->html, html) == 0);
 
-    deleteWebsite(website);
+    freeWebsite(website);
 }
 
 void testCreateDatabase()
@@ -355,9 +369,9 @@ void testCreateDatabase()
     const char path[] = "example";
     const char html[] = "<HTML></HTML>";
 
-    Website *website = createWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html);
 
-    int ret = insertRow(db, website);
+    int ret = insertWebsite(db, website);
     assert(ret == SQLITE_OK);
 
     // lookup existing website and verify contents
@@ -372,8 +386,8 @@ void testCreateDatabase()
 
     // cleanup
     sqlite3_close(db);
-    deleteWebsite(website);
-    deleteWebsite(wLookup);
+    freeWebsite(website);
+    freeWebsite(wLookup);
 }
 
 void testLookupURL()
@@ -387,8 +401,8 @@ void testLookupURL()
     // lookup before inserting
     assert(!lookupURL(db, url));
 
-    Website *website = createWebsite(url, path, html);
-    insertRow(db, website);
+    Website *website = initWebsite(url, path, html);
+    insertWebsite(db, website);
 
     // lookup after inserting
     assert(lookupURL(db, url));
@@ -398,7 +412,7 @@ void testLookupURL()
 
     // cleanup
     sqlite3_close(db);
-    deleteWebsite(website);
+    freeWebsite(website);
 }
 
 void testFuseData()
@@ -419,6 +433,7 @@ int main()
     testReadInvalidFile();
     testLinkedList();
     testGetAttrURL();
+    testGetAttrFakeURL();
     testReadDirRoot();
     testReadDirFiles();
     testRead();

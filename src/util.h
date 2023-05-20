@@ -3,8 +3,9 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <curl/curl.h>
 
-bool util_downloadURL(const char *url, const char *filename);
+CURLcode util_downloadURL(const char *url, const char *filename);
 
 // Read entire file entire buffer
 // Note: caller must free(buffer)

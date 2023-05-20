@@ -12,7 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
+
+#include <curl/curl.h>
 
 int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
 {
@@ -23,7 +26,8 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
         return 0;
     }
 
-    char *url = getURL(path, fuseData);
+    char url[PATH_MAX] = {};
+    getURL(url, path, fuseData);
 
     if (!util_isURL(url))
     {
@@ -34,8 +38,8 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
     char filename[PATH_MAX] = {};
     util_urlToFileName(filename, url);
 
-    const bool isValidURL = util_downloadURL(url, filename);
-    if (isValidURL)
+    const int curlStatus = util_downloadURL(url, filename);
+    if (curlStatus == CURLE_OK)
     {
         printf(url);
         printf("\n");
@@ -44,22 +48,21 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
         // Read into buffer
         char *contents = util_readEntireFile(filename);
 
-        // copy file attributes to stbuf
-        struct stat localBuf;
-        int ret = stat(filename, &localBuf);
-        assert(ret == 0);
-        memcpy(stbuf, &localBuf, sizeof(struct stat));
-
         // remove file
         remove(filename);
 
+        // todo: save length in database?
         stbuf->st_size = strlen(contents);
+        //stbuf->st_size = strlen(website->html);
         stbuf->st_mode = regular_file.st_mode;
+        // set timestamp        
+        stbuf->st_mtime = time(NULL);
+
+        // free memory
         free(contents);
     }
 
-    free(url);
-    return 0;
+    return curlStatus;
 }
 
 int operations_readdir(const char *path, void *buf, fill_dir_t filler,
@@ -88,7 +91,8 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
 int operations_read(const char *fusePath, char *buf, size_t size,
     off_t offset, FuseData *fuseData)
 {
-    char *url = getURL(fusePath, fuseData);
+    char url[PATH_MAX] = {};
+    getURL(url, fusePath, fuseData);
 
     char filename[PATH_MAX] = {};
     util_urlToFileName(filename, url);
@@ -106,11 +110,10 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     len = strlen(contents);
     free(contents);
 
-    free(url);
     return len;
 }
 
-char *getURL(const char *fusePath, FuseData *fuseData)
+void getURL(char *url, const char *fusePath, FuseData *fuseData)
 {
     char *pathNoSlash = NULL;
     // Website *website = lookupWebsite(fuseData->db, fusePath + 1);
@@ -131,5 +134,7 @@ char *getURL(const char *fusePath, FuseData *fuseData)
         free(pathCopy);
     }
 
-    return pathNoSlash;
+    int len = strlen(pathNoSlash);
+    assert(len <= PATH_MAX);
+    memcpy(url, pathNoSlash, len);
 }

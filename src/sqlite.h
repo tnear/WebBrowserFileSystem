@@ -8,7 +8,7 @@ struct Website;
 
 sqlite3* createDatabase();
 int _createWebsiteTable(sqlite3 *db);
-int insertRow(sqlite3 *db, struct Website *website);
+int insertWebsite(sqlite3 *db, struct Website *website);
 struct Website *lookupWebsite(sqlite3 *db, const char *url);
 bool lookupURL(sqlite3 *db, const char *url);
 

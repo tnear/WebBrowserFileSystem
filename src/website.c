@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-Website* createWebsite(const char *url, const char *path, const char *html)
+Website* initWebsite(const char *url, const char *path, const char *html)
 {
     Website *website = malloc(sizeof(Website));
     website->url = malloc(strlen(url));
@@ -15,7 +15,7 @@ Website* createWebsite(const char *url, const char *path, const char *html)
     return website;
 }
 
-void deleteWebsite(Website *website)
+void freeWebsite(Website *website)
 {
     free(website->url);
     free(website->path);

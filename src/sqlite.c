@@ -34,7 +34,7 @@ int _createWebsiteTable(sqlite3 *db)
     return rc;
 }
 
-int insertRow(sqlite3 *db, Website *website)
+int insertWebsite(sqlite3 *db, Website *website)
 {
     const char *insertQuery = "insert into " WEBSITE " (URL, PATH, HTML) values (?, ?, ?);";
     sqlite3_stmt *stmt = NULL;
@@ -57,7 +57,7 @@ int insertRow(sqlite3 *db, Website *website)
     return SQLITE_OK;
 }
 
-// note: caller must deleteWebsite(website)
+// note: caller must freeWebsite(website)
 Website* lookupWebsite(sqlite3 *db, const char *url)
 {
     Website *website = NULL;
@@ -96,7 +96,7 @@ Website* lookupWebsite(sqlite3 *db, const char *url)
 
     if (count == 1)
     {
-        website = createWebsite(url, path, html);
+        website = initWebsite(url, path, html);
     }
     
     sqlite3_finalize(stmt);

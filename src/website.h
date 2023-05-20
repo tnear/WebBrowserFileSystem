@@ -8,7 +8,7 @@ typedef struct Website
     char *html;
 } Website;
 
-Website* createWebsite(const char *url, const char *path, const char *html);
-void deleteWebsite(Website *website);
+Website* initWebsite(const char *url, const char *path, const char *html);
+void freeWebsite(Website *website);
 
 #endif
