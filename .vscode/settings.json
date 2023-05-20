@@ -15,6 +15,7 @@
         "random": "c",
         "tuple": "c",
         "type_traits": "c",
-        "atomic": "c"
+        "atomic": "c",
+        "cstdio": "c"
     }
 }

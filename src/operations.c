@@ -21,7 +21,7 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
 {
     if (strcmp(path, "/") == 0)
     {
-        // Root path
+        // for root path, set permissions then exit
         stbuf->st_mode = S_IFDIR | 0400;
         return 0;
     }
@@ -35,32 +35,53 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
         return 0;
     }
 
-    char filename[PATH_MAX] = {};
-    util_urlToFileName(filename, url);
-
-    const int curlStatus = util_downloadURL(url, filename);
-    if (curlStatus == CURLE_OK)
+    CURLcode curlStatus = CURLE_OK;
+    size_t fileSize = -1;
+    Website *website = lookupWebsite(fuseData->db, url);
+    if (website)
     {
+        fileSize = strlen(website->html);
+    }
+    else
+    {
+        char filename[PATH_MAX] = {};
+        util_urlToFileName(filename, url);
+
+        curlStatus = util_downloadURL(url, filename);
+        if (curlStatus != CURLE_OK)
+        {
+            // cannot download, return error
+            return curlStatus;
+        }
+
         printf(url);
         printf("\n");
-        llInsertNodeIfDoesntExist(&fuseData->llHead, filename, url);
 
-        // Read into buffer
+        // read into buffer
         char *contents = util_readEntireFile(filename);
+        fileSize = strlen(contents);
 
-        // remove file
+        // add to database
+        website = initWebsite(url, filename, contents);
+        insertWebsite(fuseData->db, website);
+
+        // remove temp file
         remove(filename);
-
-        // todo: save length in database?
-        stbuf->st_size = strlen(contents);
-        //stbuf->st_size = strlen(website->html);
-        stbuf->st_mode = regular_file.st_mode;
-        // set timestamp        
-        stbuf->st_mtime = time(NULL);
 
         // free memory
         free(contents);
     }
+
+    // todo: save html length in database?
+    assert(fileSize != -1);
+    stbuf->st_size = fileSize;
+    stbuf->st_mode = regular_file.st_mode;
+    // set timestamp to current time      
+    stbuf->st_mtime = time(NULL);
+
+    // cleanup
+    assert(website);
+    freeWebsite(website);
 
     return curlStatus;
 }

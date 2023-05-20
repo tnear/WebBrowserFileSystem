@@ -74,30 +74,20 @@ Website* lookupWebsite(sqlite3 *db, const char *url)
     sqlite3_bind_text(stmt, idx++, url, -1, SQLITE_STATIC);
 
     int count = 0;
-
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
         ++count;
         const char *tempPath = sqlite3_column_text(stmt, 0);
-        int len = strlen(tempPath);
-        path = malloc(len + 1);
-        path[len] = '\0';
-        strcpy(path, tempPath);
-
         const char *tempHtml = sqlite3_column_text(stmt, 1);
-        len = strlen(tempHtml);
-        html = malloc(len + 1);
-        html[len] = '\0';
-        strcpy(html, tempHtml);
+
+        website = initWebsite(url, tempPath, tempHtml);
     }
     
     assert(rc == SQLITE_DONE);
     assert(count <= 1);
 
-    if (count == 1)
-    {
-        website = initWebsite(url, path, html);
-    }
+    // a website should be created only if count == 1
+    assert( (count == 0 && !website) || (count == 1 && website) );
     
     sqlite3_finalize(stmt);
 
@@ -129,4 +119,23 @@ bool lookupURL(sqlite3 *db, const char *url)
 
     // return true when finding the URL
     return count > 0;
+}
+
+int getWebsiteCount(sqlite3 *db)
+{
+    const char sql[] = "select count(*) from " WEBSITE ";";
+    
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    assert(rc == SQLITE_OK);
+    
+    rc = sqlite3_step(stmt);
+    assert(rc == SQLITE_ROW);
+
+    // get count
+    int count = sqlite3_column_int(stmt, 0);
+
+    sqlite3_finalize(stmt);
+
+    return count;
 }

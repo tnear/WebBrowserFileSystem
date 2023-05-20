@@ -118,12 +118,13 @@ void testGetAttrURL()
     struct stat st;
     memset(&st, 0, sizeof(st));
     FuseData *fuseData = initFuseData();
+    assert(getWebsiteCount(fuseData->db) == 0);
 
     int ret = operations_getattr(full_filename, &st, fuseData);
     assert(ret == CURLE_OK);
 
     // verify linked list is correct
-    assert(llGetLength(fuseData->llHead) == 1);
+    assert(getWebsiteCount(fuseData->db) == 1);
     llContainsString(fuseData->llHead, filename);
 
     // update: files are now transient

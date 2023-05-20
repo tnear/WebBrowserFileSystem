@@ -5,11 +5,20 @@
 Website* initWebsite(const char *url, const char *path, const char *html)
 {
     Website *website = malloc(sizeof(Website));
-    website->url = malloc(strlen(url));
+
+    size_t len = strlen(url);
+    website->url = malloc(len + 1);
+    website->url[len] = '\0';
     strcpy(website->url, url);
-    website->path = malloc(strlen(path));
+
+    len = strlen(path);
+    website->path = malloc(len + 1);
+    website->path[len] = '\0';
     strcpy(website->path, path);
-    website->html = malloc(strlen(html));
+
+    len = strlen(html);
+    website->html = malloc(len + 1);
+    website->html[len] = '\0';
     strcpy(website->html, html);
 
     return website;
