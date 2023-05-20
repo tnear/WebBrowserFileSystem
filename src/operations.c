@@ -17,6 +17,11 @@
 
 #include <curl/curl.h>
 
+#define FUSE_PATH_MAX 4096
+
+// For example.com/a
+// path will be: "/example.com/a" when typing commands
+// path will be: "/a" when running querying commands (ex: ls)
 int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
 {
     if (strcmp(path, "/") == 0)
@@ -26,7 +31,9 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
         return 0;
     }
 
-    char url[PATH_MAX] = {};
+    printf("path: %s\n", path);
+
+    char url[FUSE_PATH_MAX] = {};
     getURL(url, path, fuseData);
 
     if (!util_isURL(url))
@@ -37,14 +44,14 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
 
     CURLcode curlStatus = CURLE_OK;
     size_t fileSize = -1;
-    Website *website = lookupWebsite(fuseData->db, url);
+    Website *website = lookupWebsiteByUrl(fuseData->db, url);
     if (website)
     {
         fileSize = strlen(website->html);
     }
     else
     {
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         util_urlToFileName(filename, url);
 
         curlStatus = util_downloadURL(url, filename);
@@ -117,24 +124,20 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
 int operations_read(const char *fusePath, char *buf, size_t size,
     off_t offset, FuseData *fuseData)
 {
-    char url[PATH_MAX] = {};
+    // fusePath is of form: "http:\\\\example.com"
+    // use getURL to convert above to: "http://example.com"
+    char url[FUSE_PATH_MAX] = {};
     getURL(url, fusePath, fuseData);
 
-    char filename[PATH_MAX] = {};
-    util_urlToFileName(filename, url);
-    int len = 0;
+    Website *website = lookupWebsiteByUrl(fuseData->db, url);
+    assert(website);
 
-    assert(llContainsString(fuseData->llHead, filename));
-    util_downloadURL(url, filename);
+    // copy to buffer
+    strcpy(buf, website->html);
+    int len = strlen(website->html);
 
-    // Read file into buffer
-    char *contents = util_readEntireFile(filename);
-    remove(filename);
-    
-    // Copy to buffer
-    strcpy(buf, contents);
-    len = strlen(contents);
-    free(contents);
+    // free memory
+    freeWebsite(website);
 
     return len;
 }
@@ -142,12 +145,11 @@ int operations_read(const char *fusePath, char *buf, size_t size,
 void getURL(char *url, const char *fusePath, FuseData *fuseData)
 {
     char *pathNoSlash = NULL;
-    // Website *website = lookupWebsite(fuseData->db, fusePath + 1);
-    Node *existingNode = llFindNode(fuseData->llHead, fusePath + 1);
-    if (existingNode)
+    Website *website = NULL;
+    website = lookupWebsiteByUrl(fuseData->db, fusePath + 1);
+    if (website)
     {
-        pathNoSlash = strdup(existingNode->url);
-        //pathNoSlash = strdup(website->url);
+        pathNoSlash = strdup(website->url);
     }
     else
     {
@@ -161,6 +163,12 @@ void getURL(char *url, const char *fusePath, FuseData *fuseData)
     }
 
     int len = strlen(pathNoSlash);
-    assert(len <= PATH_MAX);
+    assert(len <= FUSE_PATH_MAX);
+
+    // copy to url which is returned to user
     memcpy(url, pathNoSlash, len);
+
+    // cleanup
+    free(pathNoSlash);
+    freeWebsite(website);
 }

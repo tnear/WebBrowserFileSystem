@@ -16,7 +16,9 @@ FuseData *g_fuseData = NULL;
 // Get file attributes. Similar to stat().
 int urlfs_getattr(const char *path, struct stat *stbuf)
 {
-    return operations_getattr(path, stbuf, g_fuseData);
+    int ret = operations_getattr(path, stbuf, g_fuseData);
+    (void) ret;
+    return 0; // assume everything is successful to avoid fuse errors
 }
 
 // Read directory

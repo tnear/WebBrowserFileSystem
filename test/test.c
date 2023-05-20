@@ -17,6 +17,13 @@
 #include <curl/curl.h>
 #include <sys/stat.h>
 
+#define FUSE_PATH_MAX 4096
+
+bool isFile(const char *filename)
+{
+    return access(filename, F_OK) == 0;
+}
+
 void testDownloadURL()
 {
     char url[] = "http://example.com";
@@ -44,8 +51,8 @@ void testInvalidURL()
     CURLcode curlStatus = util_downloadURL(url, file);
     assert(curlStatus == CURLE_COULDNT_RESOLVE_HOST);
 
-    // Verify no file was created
-    assert(access(file, F_OK) != 0);
+    // Verify no file was created (isFile)
+    assert(!isFile(file));
 }
 
 void testReadEntireFile()
@@ -128,8 +135,7 @@ void testGetAttrURL()
     llContainsString(fuseData->llHead, filename);
 
     // update: files are now transient
-    const bool fileExists = access(filename, F_OK) == 0;
-    assert(!fileExists);
+    assert(!isFile(filename));
 
     // verify getattr result
     assert(st.st_size >= 1000 && st.st_size <= 10000);
@@ -207,7 +213,7 @@ void testReadDirFiles()
     assert(g_testFillerCallCount == 0);
     assert(ret == 0);
 
-    free(fuseData);
+    deleteFuseData(fuseData);
 }
 
 void testRead()
@@ -218,12 +224,18 @@ void testRead()
     // allocate sufficient space
     char *contents = calloc(4096, 1);
 
+    // pre-download url b/c we are directly calling read()
+    CURLcode curlStatus = util_downloadURL(filenameNoSlash, filenameNoSlash);
+    assert(curlStatus == CURLE_OK);
+    char *htmlData = util_readEntireFile(filenameNoSlash);
+
     size_t size = 0; // unused
     off_t offset = 0; // unused
 
     // init linked list with www.example.com
     FuseData *fuseData = initFuseData();
-    llInsertNode(&fuseData->llHead, filenameNoSlash, filenameNoSlash);
+    Website *website = initWebsite(filenameNoSlash, filenameNoSlash, htmlData);
+    insertWebsite(fuseData->db, website);
 
     // read file, return length
     int fileLength = operations_read(filename, contents, size, offset, fuseData);
@@ -232,11 +244,15 @@ void testRead()
     // verify length and file contents
     assert(strstr(contents, "<!doctype html>") != 0);
     assert(strstr(contents, "</html>") != 0);
-    free(contents);
     assert(strLength == fileLength);
     assert(fileLength >= 1024 && fileLength <= 2048);
 
-    free(fuseData);
+    // cleanup
+    deleteFuseData(fuseData);
+    free(htmlData);
+    free(contents);
+    remove(filenameNoSlash);
+    assert(!isFile(filenameNoSlash));
 }
 
 void testReadBackslash()
@@ -249,10 +265,23 @@ void testReadBackslash()
 
     // init linked list with www.example.com
     FuseData *fuseData = initFuseData();
-    llInsertNode(&fuseData->llHead, "path", "www.example.com/path");
+    char url[] = "/www.example.com/path";
+    char *urlNoSlash = url + 1;
+
+    // pre-download url b/c we are directly calling read()
+    char filename[] = "path";
+    assert(!isFile(filename));
+
+    CURLcode curlStatus = util_downloadURL(urlNoSlash, filename);
+    assert(curlStatus == CURLE_OK);
+    char *htmlData = util_readEntireFile(filename);
+
+    // add to database
+    Website *website = initWebsite(urlNoSlash, filename, htmlData);
+    insertWebsite(fuseData->db, website);
 
     // read file, return length
-    int fileLength = operations_read("/path", contents, size, offset, fuseData);
+    int fileLength = operations_read(url, contents, size, offset, fuseData);
     int strLength = strlen(contents);
 
     // verify length and file contents
@@ -263,7 +292,11 @@ void testReadBackslash()
 
     // cleanup
     free(contents);
-    free(fuseData);
+    free(htmlData);
+    deleteFuseData(fuseData);
+    assert(isFile(filename));
+    remove(filename);
+    assert(!isFile(filename));
 }
 
 void testIsURL()
@@ -279,60 +312,60 @@ void testIsURL()
 void testUrlToFileName()
 {
     {
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "www.google.com";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, url) == 0);
     }
     {
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "maps.google.com";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, url) == 0);
     }
     {
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "example.net";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, url) == 0);
     }
     {
         // slash
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "google.com/index.html";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, "index.html") == 0);
     }
     {
         // ends with slash (ignore)
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "google.com/";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, "google.com") == 0);
     }
     {
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "google.com/maps";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, "maps") == 0);
     }
     {
         // ends with slash (ignore)
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "google.com/maps/";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, "maps") == 0);
     }
     {
         // double slash
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "google.com/maps//";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, "maps") == 0);
     }
     {
         // all slashes
-        char filename[PATH_MAX] = {};
+        char filename[FUSE_PATH_MAX] = {};
         char url[] = "///";
         util_urlToFileName(filename, url);
         assert(strcmp(filename, "") == 0);
@@ -385,13 +418,13 @@ void testCreateDatabase()
     assert(ret == SQLITE_OK);
 
     // lookup existing website and verify contents
-    Website *wLookup = lookupWebsite(db, url);
+    Website *wLookup = lookupWebsiteByUrl(db, url);
     assert(strcmp(wLookup->url, url) == 0);
     assert(strcmp(wLookup->path, path) == 0);
     assert(strcmp(wLookup->html, html) == 0);
 
     // fake url (returns NULL)
-    Website *fake = lookupWebsite(db, "fake_url");
+    Website *fake = lookupWebsiteByUrl(db, "fake_url");
     assert(!fake);
 
     // cleanup
@@ -466,7 +499,38 @@ void testFuseData()
     assert(fuseData->db);
 
     // cleanup
-    free(fuseData);
+    deleteFuseData(fuseData);
+}
+
+void testLookupByFilename()
+{
+    sqlite3 *db = createDatabase();
+
+    const char url[] = "www.example.com";
+    const char path[] = "example";
+    const char html[] = "<HTML></HTML>";
+
+    // lookup empty database
+    Website *fake = lookupWebsiteByFilename(db, "fake_filename");
+    assert(!fake);
+
+    Website *website = initWebsite(url, path, html);
+    insertWebsite(db, website);
+
+    // lookup existing website and verify contents
+    Website *wLookup = lookupWebsiteByFilename(db, path);
+    assert(strcmp(wLookup->url, url) == 0);
+    assert(strcmp(wLookup->path, path) == 0);
+    assert(strcmp(wLookup->html, html) == 0);
+
+    // fake url (returns NULL)
+    fake = lookupWebsiteByFilename(db, "fake_filename");
+    assert(!fake);
+
+    // cleanup
+    sqlite3_close(db);
+    freeWebsite(website);
+    freeWebsite(wLookup);
 }
 
 int main()
@@ -485,14 +549,14 @@ int main()
     testIsURL();
     testUrlToFileName();
     testReplaceChar();
+    testFuseData();
 
     // sqlite tests
     testWebsite();
     testCreateDatabase();
     testLookupURL();
     testGetFileNames();
-
-    testFuseData();
+    testLookupByFilename();
 
     printf("Tests passed!\n");
     return 0;
