@@ -1,10 +1,11 @@
 #include "sqlite.h"
+#include "linkedList.h"
+#include "website.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "website.h"
 
 #define WEBSITE "Website"
 
@@ -138,4 +139,32 @@ int getWebsiteCount(sqlite3 *db)
     sqlite3_finalize(stmt);
 
     return count;
+}
+
+// returns linked list of all file names in database
+// intended for readdir() which only needs file names
+Node* getFileNames(sqlite3 *db)
+{
+    Node *llHead = NULL;
+
+    char *path = NULL;
+    const char sql[] = "select PATH from " WEBSITE ";";
+    
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    assert(rc == SQLITE_OK);
+    
+    // bind values to prepared statement
+    int idx = 1;
+    sqlite3_bind_text(stmt, idx++, path, -1, SQLITE_STATIC);
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
+    {
+        const char *tempPath = sqlite3_column_text(stmt, 0);
+        char url[] = ""; // unused
+        llInsertNode(&llHead, tempPath, url);
+    }
+    
+    sqlite3_finalize(stmt);
+    return llHead;
 }

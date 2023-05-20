@@ -171,13 +171,22 @@ void testReadDirRoot()
 
     off_t offset = 0;
     FuseData *fuseData = initFuseData();
-    llInsertNode(&fuseData->llHead, "file1.txt", "file1.txt");
-    llInsertNode(&fuseData->llHead, "file2.txt", "file2.txt");
+
+    char url1[] = "file1.txt";
+    char url2[] = "file2.txt";
+
+    // website 1
+    Website *website = initWebsite(url1, url1, url1);
+    insertWebsite(fuseData->db, website);
+
+    // website 2
+    website = initWebsite(url2, url2, url2);
+    insertWebsite(fuseData->db, website);
 
     int ret = operations_readdir(filename, buf, testFiller, offset, fuseData);
+    assert(ret == 0);
 
     assert(g_testFillerCallCount == 2);
-    assert(ret == 0);
     g_testFillerCallCount = 0;
 }
 
@@ -416,6 +425,40 @@ void testLookupURL()
     freeWebsite(website);
 }
 
+void testGetFileNames()
+{
+    sqlite3 *db = createDatabase();
+
+    // empty state
+    Node *node = getFileNames(db);
+    assert(!node);
+    const char path1[] = "example";
+    const char path2[] = "example2";
+
+    // add two websites
+    {
+        const char url[] = "www.example.com";
+        const char path[] = "example";
+        const char html[] = "<HTML></HTML>";
+
+        Website *website = initWebsite(url, path1, html);
+        insertWebsite(db, website);
+    }
+
+    {
+        const char url[] = "www.example.com2";
+        const char html[] = "<HTML></HTML>2";
+
+        Website *website = initWebsite(url, path2, html);
+        insertWebsite(db, website);
+    }
+
+    node = getFileNames(db);
+    assert(llGetLength(node) == 2);
+    assert(llContainsString(node, path1));
+    assert(llContainsString(node, path2));
+}
+
 void testFuseData()
 {
     FuseData *fuseData = initFuseData();
@@ -447,6 +490,7 @@ int main()
     testWebsite();
     testCreateDatabase();
     testLookupURL();
+    testGetFileNames();
 
     testFuseData();
 

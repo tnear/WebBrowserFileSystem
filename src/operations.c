@@ -95,16 +95,21 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
         return 0;
     }
 
-    // Root
+    // make every file a direct child of root
+    assert(strcmp(path, "/") == 0);
     const off_t zeroOffset = 0;
 
     // fill all files added this session
-    Node *current = fuseData->llHead;
+    Node *current = getFileNames(fuseData->db);
+    Node *currentCache = current;
     while (current)
     {
         filler(buf, current->filename, &regular_file, zeroOffset);
         current = current->next;
     }
+
+    // free linked list when done
+    llFreeList(currentCache);
 
     return 0;
 }
