@@ -97,7 +97,6 @@ void testLinkedList()
     assert(!llContainsString(head, "fake_string"));
 
     assert(llFindNode(head, "Hello") == helloNode);
-
     assert(llGetLength(head) == 4);
 
     // try duplicate insert
@@ -132,7 +131,6 @@ void testGetAttrURL()
 
     // verify linked list is correct
     assert(getWebsiteCount(fuseData->db) == 1);
-    llContainsString(fuseData->llHead, filename);
 
     // update: files are now transient
     assert(!isFile(filename));
@@ -184,6 +182,7 @@ void testReadDirRoot()
     // website 1
     Website *website = initWebsite(url1, url1, url1);
     insertWebsite(fuseData->db, website);
+    freeWebsite(website);
 
     // website 2
     website = initWebsite(url2, url2, url2);
@@ -194,6 +193,9 @@ void testReadDirRoot()
 
     assert(g_testFillerCallCount == 2);
     g_testFillerCallCount = 0;
+
+    // cleanup
+    freeWebsite(website);
 }
 
 void testReadDirFiles()
@@ -253,6 +255,7 @@ void testRead()
     free(contents);
     remove(filenameNoSlash);
     assert(!isFile(filenameNoSlash));
+    freeWebsite(website);
 }
 
 void testReadBackslash()
@@ -297,6 +300,7 @@ void testReadBackslash()
     assert(isFile(filename));
     remove(filename);
     assert(!isFile(filename));
+    freeWebsite(website);
 }
 
 void testIsURL()
@@ -476,6 +480,7 @@ void testGetFileNames()
 
         Website *website = initWebsite(url, path1, html);
         insertWebsite(db, website);
+        freeWebsite(website);
     }
 
     {
@@ -484,6 +489,7 @@ void testGetFileNames()
 
         Website *website = initWebsite(url, path2, html);
         insertWebsite(db, website);
+        freeWebsite(website);
     }
 
     node = getFileNames(db);
@@ -495,7 +501,6 @@ void testGetFileNames()
 void testFuseData()
 {
     FuseData *fuseData = initFuseData();
-    assert(!fuseData->llHead);
     assert(fuseData->db);
 
     // cleanup
@@ -533,6 +538,35 @@ void testLookupByFilename()
     freeWebsite(wLookup);
 }
 
+void testLookupOnPath()
+{
+    FuseData *fuseData = initFuseData();
+
+    // insert website which has a path ("my_path")
+    char *fusePath = "/my_path";
+    char *fusePathNoSlash = fusePath + 1;
+    Website *website = initWebsite("example.com/my_path", fusePathNoSlash, "data here...");
+    insertWebsite(fuseData->db, website);
+
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
+    // verify successful lookup of path (NOT url)
+    int ret = operations_getattr(fusePath, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    // verify getattr result
+    assert(st.st_size == 12);
+
+    // verify timestamp
+    time_t currentTime = time(NULL);
+    assert(currentTime - st.st_mtime <= 5);
+
+    // cleanup
+    freeWebsite(website);
+
+}
+
 int main()
 {
     testDownloadURL();
@@ -550,13 +584,12 @@ int main()
     testUrlToFileName();
     testReplaceChar();
     testFuseData();
-
-    // sqlite tests
     testWebsite();
     testCreateDatabase();
     testLookupURL();
     testGetFileNames();
     testLookupByFilename();
+    testLookupOnPath();
 
     printf("Tests passed!\n");
     return 0;

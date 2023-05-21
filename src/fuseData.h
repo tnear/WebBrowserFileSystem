@@ -7,7 +7,6 @@ struct Node;
 
 typedef struct FuseData
 {
-    struct Node *llHead;
     sqlite3 *db;
 } FuseData;
 

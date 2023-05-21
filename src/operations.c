@@ -19,41 +19,50 @@
 
 #define FUSE_PATH_MAX 4096
 
-// For example.com/a
-// path will be: "/example.com/a" when typing commands
-// path will be: "/a" when running querying commands (ex: ls)
-int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
+// Returns file attributes
+// For "example.com/a",
+// fusePath will be: "/example.com/a" when typing commands
+// fusePath will be: "/a" when querying (ex: ls)
+int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseData)
 {
-    if (strcmp(path, "/") == 0)
+    // for root path, set permissions then exit
+    if (strcmp(fusePath, "/") == 0)
     {
-        // for root path, set permissions then exit
         stbuf->st_mode = S_IFDIR | 0400;
         return 0;
     }
 
-    printf("path: %s\n", path);
-
+    // get url from fusePath, ex:
+    // fusePath: /example.com\\a
+    //      url:  example.com/a
+    //  filname:              a
     char url[FUSE_PATH_MAX] = {};
-    getURL(url, path, fuseData);
+    getUrlFromFusePath(url, fusePath, fuseData);
+    CURLcode curlStatus = CURLE_OK; // assume okay until network request
 
-    if (!util_isURL(url))
+    // get file name from url
+    char filename[FUSE_PATH_MAX] = {};
+    util_urlToFileName(filename, url);
+
+    // lookup by filename first
+    // this is needed because sometimes this function will only be called
+    // with the filename (ex: "/a" for above example) with no reference to url
+    Website *website = lookupWebsiteByFilename(fuseData->db, filename);
+    if (!website)
     {
-        // not URL, don't waste time networking
-        return 0;
+        if (!util_isURL(url))
+        {
+            // not URL, don't waste time networking
+            return 0;
+        }
+
+        // next, try lookup by url
+        website = lookupWebsiteByUrl(fuseData->db, url);
     }
 
-    CURLcode curlStatus = CURLE_OK;
-    size_t fileSize = -1;
-    Website *website = lookupWebsiteByUrl(fuseData->db, url);
-    if (website)
+    // if this url is not in database, it hasn't been seen before, so download it
+    if (!website)
     {
-        fileSize = strlen(website->html);
-    }
-    else
-    {
-        char filename[FUSE_PATH_MAX] = {};
-        util_urlToFileName(filename, url);
-
         curlStatus = util_downloadURL(url, filename);
         if (curlStatus != CURLE_OK)
         {
@@ -66,7 +75,6 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
 
         // read into buffer
         char *contents = util_readEntireFile(filename);
-        fileSize = strlen(contents);
 
         // add to database
         website = initWebsite(url, filename, contents);
@@ -79,20 +87,22 @@ int operations_getattr(const char *path, struct stat *stbuf, FuseData *fuseData)
         free(contents);
     }
 
+    assert(website);
     // todo: save html length in database?
-    assert(fileSize != -1);
+    size_t fileSize = strlen(website->html);
+
     stbuf->st_size = fileSize;
     stbuf->st_mode = regular_file.st_mode;
     // set timestamp to current time      
     stbuf->st_mtime = time(NULL);
 
     // cleanup
-    assert(website);
     freeWebsite(website);
 
     return curlStatus;
 }
 
+// Returns list of child file names
 int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     off_t offset, FuseData *fuseData)
 {
@@ -121,13 +131,14 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     return 0;
 }
 
+// reads file data
 int operations_read(const char *fusePath, char *buf, size_t size,
     off_t offset, FuseData *fuseData)
 {
     // fusePath is of form: "http:\\\\example.com"
     // use getURL to convert above to: "http://example.com"
     char url[FUSE_PATH_MAX] = {};
-    getURL(url, fusePath, fuseData);
+    getUrlFromFusePath(url, fusePath, fuseData);
 
     Website *website = lookupWebsiteByUrl(fuseData->db, url);
     assert(website);
@@ -142,33 +153,32 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     return len;
 }
 
-void getURL(char *url, const char *fusePath, FuseData *fuseData)
+// ex:
+// fusePath: /example.com\\a
+//      url:  example.com/a
+void getUrlFromFusePath(char *url, const char *fusePath, FuseData *fuseData)
 {
-    char *pathNoSlash = NULL;
-    Website *website = NULL;
-    website = lookupWebsiteByUrl(fuseData->db, fusePath + 1);
+    Website *website = lookupWebsiteByUrl(fuseData->db, fusePath + 1);
     if (website)
     {
-        pathNoSlash = strdup(website->url);
-    }
-    else
-    {
-        // ex: path: "/example.com"
-        // ex: pathNoSlash: "example.com"
-        char *pathCopy = strdup(fusePath);
-        // '/' is not allowed in file name, so have user type in '\'. Replace it here:
-        util_replaceChar(pathCopy, '\\', '/');
-        pathNoSlash = strdup(pathCopy + 1);
-        free(pathCopy);
+        // lookup from database if it already exists
+        memcpy(url, website->url, strlen(website->url));
+        freeWebsite(website);
+        return;
     }
 
-    int len = strlen(pathNoSlash);
+    // remove leading slash using +1
+    char *pathCopy = strdup(fusePath + 1);
+
+    // '/' is not allowed in file name, so have user type in '\'. Replace it here:
+    util_replaceChar(pathCopy, '\\', '/');
+
+    int len = strlen(pathCopy);
     assert(len <= FUSE_PATH_MAX);
 
     // copy to url which is returned to user
-    memcpy(url, pathNoSlash, len);
+    memcpy(url, pathCopy, len);
 
     // cleanup
-    free(pathNoSlash);
-    freeWebsite(website);
+    free(pathCopy);
 }

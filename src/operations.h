@@ -20,6 +20,6 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t off
 int operations_read(const char *path, char *buf, size_t size,
     off_t offset, struct FuseData *fuseData);
 
-void getURL(char *url, const char *fusePath, struct FuseData *fuseData);
+void getUrlFromFusePath(char *url, const char *fusePath, struct FuseData *fuseData);
 
 #endif
