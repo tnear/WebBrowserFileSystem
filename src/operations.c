@@ -15,7 +15,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <curl/curl.h>
 
 #define FUSE_PATH_MAX 4096
 
@@ -45,54 +44,16 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
     char filename[FUSE_PATH_MAX] = {};
     util_urlToFileName(filename, url);
 
-    // lookup by filename first
-    // this is needed because sometimes this function will only be called
-    // with the filename (ex: "/a" for above example) with no reference to url
-    Website *website = lookupWebsiteByFilename(fuseData->db, filename);
-    if (!website)
+    Website *website = lookupWebsite(fuseData, url, filename, &curlStatus);
+    if (curlStatus != CURLE_OK)
     {
-        if (!util_isURL(url))
-        {
-            // not URL, don't waste time networking
-            return 0;
-        }
-
-        // next, try lookup by url
-        website = lookupWebsiteByUrl(fuseData->db, url);
-    }
-
-    // if this url is not in database, it hasn't been seen before, so download it
-    if (!website)
-    {
-        curlStatus = util_downloadURL(url, filename);
-        if (curlStatus != CURLE_OK)
-        {
-            // cannot download, return error
-            return curlStatus;
-        }
-
-        printf(url);
-        printf("\n");
-
-        // read into buffer
-        char *contents = util_readEntireFile(filename);
-
-        // add to database
-        website = initWebsite(url, filename, contents);
-        insertWebsite(fuseData->db, website);
-
-        // remove temp file
-        remove(filename);
-
-        // free memory
-        free(contents);
+        return curlStatus;
     }
 
     assert(website);
+    
     // todo: save html length in database?
-    size_t fileSize = strlen(website->html);
-
-    stbuf->st_size = fileSize;
+    stbuf->st_size = strlen(website->html);
     stbuf->st_mode = regular_file.st_mode;
     // set timestamp to current time      
     stbuf->st_mtime = time(NULL);
@@ -117,7 +78,7 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     assert(strcmp(path, "/") == 0);
     const off_t zeroOffset = 0;
 
-    // fill all files added this session
+    // fill all websites added this session
     Node *current = getFileNames(fuseData->db);
     Node *currentCache = current;
     while (current)
@@ -132,7 +93,7 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
     return 0;
 }
 
-// reads file data
+// reads website data from database to populate file
 int operations_read(const char *fusePath, char *buf, size_t size,
     off_t offset, FuseData *fuseData)
 {
@@ -153,6 +114,7 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     }
 
     // the website must exist in database
+    // if this assert fails, it means readattr() did not download url correctly
     assert(website);
 
     // copy to buffer up to 'size' starting at 'offset'
@@ -196,4 +158,58 @@ void getUrlFromFusePath(char *url, const char *fusePath, FuseData *fuseData)
 
     // cleanup
     free(pathCopy);
+}
+
+Website* lookupWebsite(FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus)
+{
+    // lookup by filename first
+    // this is needed because sometimes this function will only be called
+    // with the filename (ex: "/a" for above example) with no reference to url
+    Website *website = lookupWebsiteByFilename(fuseData->db, filename);
+    if (!website)
+    {
+        if (!util_isURL(url))
+        {
+            // not URL, don't waste time networking
+            return 0;
+        }
+
+        // next, try lookup by url
+        website = lookupWebsiteByUrl(fuseData->db, url);
+    }
+
+    // if this url is not in database, it hasn't been seen before, so download it
+    if (!website)
+    {
+        website = downloadWebsite(fuseData, url, filename, curlStatus);
+    }
+
+    return website;
+}
+
+Website* downloadWebsite(FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus)
+{
+    *curlStatus = util_downloadURL(url, filename);
+    if (*curlStatus != CURLE_OK)
+    {
+        // cannot download, return curl error
+        return NULL;
+    }
+
+    printf("Downloaded: %s\n", url);
+
+    // read into buffer
+    char *contents = util_readEntireFile(filename);
+
+    // add to database
+    Website *website = initWebsite(url, filename, contents);
+    insertWebsite(fuseData->db, website);
+
+    // remove temp file
+    remove(filename);
+
+    // free memory
+    free(contents);
+
+    return website;
 }

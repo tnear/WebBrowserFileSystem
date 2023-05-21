@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Website table for storing url, path, and html data
 #define WEBSITE "Website"
 
 sqlite3* createDatabase()
@@ -17,8 +18,8 @@ sqlite3* createDatabase()
     int rc = sqlite3_open(":memory:", &db);
     assert(rc == SQLITE_OK);
 
-    int ret = _createWebsiteTable(db);
-    assert(ret == SQLITE_OK);
+    rc = _createWebsiteTable(db);
+    assert(rc == SQLITE_OK);
 
     return db;
 }
@@ -193,7 +194,7 @@ Node* getFileNames(sqlite3 *db)
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
         const char *tempPath = sqlite3_column_text(stmt, 0);
-        char url[] = ""; // unused
+        char url[] = ""; // not needed for file names
         llInsertNode(&llHead, tempPath, url);
     }
     

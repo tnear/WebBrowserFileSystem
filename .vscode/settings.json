@@ -16,6 +16,7 @@
         "tuple": "c",
         "type_traits": "c",
         "atomic": "c",
-        "cstdio": "c"
+        "cstdio": "c",
+        "curl.h": "c"
     }
 }
