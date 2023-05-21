@@ -706,6 +706,36 @@ void testReadSize()
     freeWebsite(website);
 }
 
+void testReadOffset()
+{
+    char filename[] = "/www.example.com/path";
+    char *filenameNoSlash = filename + 1;
+    char path[] = "/path";
+    char *pathNoSlash = path + 1;
+
+    // allocate 10 characters
+    char buffer[10] = {};
+    // use offset of 4
+    off_t offset = 4;
+
+    char htmlData[] = "abcdefghij";
+
+    // add website to database
+    FuseData *fuseData = initFuseData();
+    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData);
+    insertWebsite(fuseData->db, website);
+
+    // using size = 3 and offset = 4 should return characters "efg"
+    size_t size = 3;
+    int fileLength = operations_read(path, buffer, size, offset, fuseData);
+    assert(fileLength == size);
+    assert(strcmp(buffer, "efg") == 0);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    freeWebsite(website);
+}
+
 int main()
 {
     testDownloadURL();
@@ -734,6 +764,7 @@ int main()
     testFTP();
     testFTPInFUSE();
     testReadSize();
+    testReadOffset();
 
     printf("Tests passed!\n");
     return 0;
