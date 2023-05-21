@@ -236,8 +236,8 @@ void testRead()
     assert(curlStatus == CURLE_OK);
     char *htmlData = util_readEntireFile(filenameNoSlash);
 
-    size_t size = 0; // unused
-    off_t offset = 0; // unused
+    size_t size = 4096;
+    off_t offset = 0;
 
     // init linked list with www.example.com
     FuseData *fuseData = initFuseData();
@@ -268,7 +268,7 @@ void testReadBackslash()
     // allocate sufficient space
     char *contents = calloc(4096, 1);
 
-    size_t size = 0; // unused
+    size_t size = 4096;
     off_t offset = 0; // unused
 
     // init linked list with www.example.com
@@ -585,7 +585,7 @@ void testReadOnPath()
 
     char htmlData[] = "my data...";
 
-    size_t size = 0; // unused
+    size_t size = 4096;
     off_t offset = 0; // unused
 
     // add website to database
@@ -662,7 +662,7 @@ void testFTPInFUSE()
 
     // read data using read()
     char *contents = calloc(4096, 1);
-    int fileLength = operations_read(url, contents, 0, 0, fuseData);
+    int fileLength = operations_read(url, contents, 4096, 0, fuseData);
     int strLength = strlen(contents);
 
     // verify length and file contents
@@ -673,6 +673,37 @@ void testFTPInFUSE()
     // cleanup
     deleteFuseData(fuseData);
     free(contents);
+}
+
+void testReadSize()
+{
+    char filename[] = "/www.example.com/path";
+    char *filenameNoSlash = filename + 1;
+    char path[] = "/path";
+    char *pathNoSlash = path + 1;
+
+    // allocate sufficient space
+    size_t size = 4096;
+    char *buffer = calloc(size, 1);
+
+    // allocate twice as many '$' chars as size
+    char *htmlData = calloc(size * 2, 1);
+    memset(htmlData, '$',   size * 2);
+
+    // add website to database
+    FuseData *fuseData = initFuseData();
+    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData);
+    insertWebsite(fuseData->db, website);
+
+    // read file, verify data
+    int fileLength = operations_read(path, buffer, size, 0, fuseData);
+    assert(fileLength == size);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(buffer);
+    free(htmlData);
+    freeWebsite(website);
 }
 
 int main()
@@ -702,6 +733,7 @@ int main()
     testGetAttrOnMountedDirectory();
     testFTP();
     testFTPInFUSE();
+    testReadSize();
 
     printf("Tests passed!\n");
     return 0;

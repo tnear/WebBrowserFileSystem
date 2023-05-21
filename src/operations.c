@@ -155,14 +155,16 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     // the website must exist in database
     assert(website);
 
-    // copy to buffer
-    strcpy(buf, website->html);
+    // copy to buffer up to size
+    strncpy(buf, website->html, size);
     int len = strlen(website->html);
+    // return length written
+    int minLen = len > size ? size : len;
 
     // free memory
     freeWebsite(website);
 
-    return len;
+    return minLen;
 }
 
 // ex:
