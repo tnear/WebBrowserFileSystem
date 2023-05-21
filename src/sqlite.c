@@ -133,11 +133,11 @@ bool lookupURL(sqlite3 *db, const char *url)
     char *path = NULL;
     char *html = NULL;
     const char sql[] = "select count(*) from " WEBSITE " where URL = ?;";
-    
+
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     assert(rc == SQLITE_OK);
-    
+
     // bind values to prepared statement
     int idx = 1;
     sqlite3_bind_text(stmt, idx++, url, -1, SQLITE_STATIC);
@@ -155,14 +155,40 @@ bool lookupURL(sqlite3 *db, const char *url)
     return count > 0;
 }
 
-int getWebsiteCount(sqlite3 *db)
+void deleteURL(sqlite3 *db, const char *url)
 {
-    const char sql[] = "select count(*) from " WEBSITE ";";
-    
+    // only call this for valid urls
+    assert(lookupURL(db, url));
+
+    char *path = NULL;
+    char *html = NULL;
+    const char sql[] = "delete from " WEBSITE " where URL = ?;";
+
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     assert(rc == SQLITE_OK);
-    
+
+    // bind values to prepared statement
+    int idx = 1;
+    sqlite3_bind_text(stmt, idx++, url, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    assert(rc == SQLITE_DONE);
+
+    sqlite3_finalize(stmt);
+
+    // url has now been deleted
+    assert(!lookupURL(db, url));
+}
+
+int getWebsiteCount(sqlite3 *db)
+{
+    const char sql[] = "select count(*) from " WEBSITE ";";
+
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    assert(rc == SQLITE_OK);
+
     rc = sqlite3_step(stmt);
     assert(rc == SQLITE_ROW);
 
@@ -182,11 +208,11 @@ Node* getFileNames(sqlite3 *db)
 
     char *path = NULL;
     const char sql[] = "select PATH from " WEBSITE ";";
-    
+
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     assert(rc == SQLITE_OK);
-    
+
     // bind values to prepared statement
     int idx = 1;
     sqlite3_bind_text(stmt, idx++, path, -1, SQLITE_STATIC);
@@ -197,7 +223,7 @@ Node* getFileNames(sqlite3 *db)
         char url[] = ""; // not needed for file names
         llInsertNode(&llHead, tempPath, url);
     }
-    
+
     sqlite3_finalize(stmt);
     return llHead;
 }

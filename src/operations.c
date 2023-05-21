@@ -51,11 +51,11 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
     }
 
     assert(website);
-    
+
     // todo: save html length in database?
     stbuf->st_size = strlen(website->html);
     stbuf->st_mode = regular_file.st_mode;
-    // set timestamp to current time      
+    // set timestamp to current time
     stbuf->st_mtime = time(NULL);
 
     // cleanup

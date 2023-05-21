@@ -28,7 +28,7 @@ void freeWebsite(Website *website)
 {
     if (!website)
         return;
-        
+
     free(website->url);
     free(website->path);
     free(website->html);

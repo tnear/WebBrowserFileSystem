@@ -12,7 +12,10 @@ int _createWebsiteTable(sqlite3 *db);
 int insertWebsite(sqlite3 *db, struct Website *website);
 struct Website *lookupWebsiteByUrl(sqlite3 *db, const char *url);
 struct Website *lookupWebsiteByFilename(sqlite3 *db, const char *filename);
+
 bool lookupURL(sqlite3 *db, const char *url);
+void deleteURL(sqlite3 *db, const char *url);
+
 int getWebsiteCount(sqlite3 *db);
 struct Node* getFileNames(sqlite3 *db);
 

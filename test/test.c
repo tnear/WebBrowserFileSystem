@@ -312,7 +312,7 @@ void testIsURL()
 {
     // URLs
     assert(util_isURL("google.com"));
-    
+
     // Not URLs
     assert(!util_isURL(".com"));
     assert(!util_isURL("com"));
@@ -614,7 +614,7 @@ void testGetAttrOnMountedDirectory()
 
     int ret = operations_getattr(rootDir, &st, fuseData);
     assert(ret == 0);
-    
+
     // verify permissions
     assert(st.st_mode == (S_IFDIR | 0777));
 
@@ -736,6 +736,40 @@ void testReadOffset()
     freeWebsite(website);
 }
 
+void testDeleteURL()
+{
+    sqlite3 *db = createDatabase();
+
+    const char url[] = "www.example.com";
+    const char path[] = "example";
+    const char html[] = "<HTML></HTML>";
+
+    Website *website = initWebsite(url, path, html);
+    insertWebsite(db, website);
+
+    // lookup url
+    assert(lookupURL(db, url));
+
+    // delete
+    deleteURL(db, url);
+
+    // verify lookup by url fails
+    assert(!lookupURL(db, url));
+
+    // cleanup
+    sqlite3_close(db);
+    freeWebsite(website);
+}
+
+void testDuplicatePath()
+{
+    // todo: fix this crash
+
+    // example.com/maps
+    // and
+    // google.com/maps
+}
+
 int main()
 {
     testDownloadURL();
@@ -765,6 +799,8 @@ int main()
     testFTPInFUSE();
     testReadSize();
     testReadOffset();
+    testDeleteURL();
+    testDuplicatePath();
 
     printf("Tests passed!\n");
     return 0;
