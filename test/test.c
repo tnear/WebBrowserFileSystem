@@ -144,6 +144,8 @@ void testGetAttrURL()
     time_t currentTime = time(NULL);
     assert(st.st_mtime > 0);
     assert(currentTime - st.st_mtime <= 5);
+
+    deleteFuseData(fuseData);
 }
 
 void testGetAttrFakeURL()
@@ -156,6 +158,8 @@ void testGetAttrFakeURL()
 
     int ret = operations_getattr(full_filename, &st, fuseData);
     assert(ret == CURLE_COULDNT_RESOLVE_HOST);
+
+    deleteFuseData(fuseData);
 }
 
 int g_testFillerCallCount = 0;
@@ -196,6 +200,7 @@ void testReadDirRoot()
 
     // cleanup
     freeWebsite(website);
+    deleteFuseData(fuseData);
 }
 
 void testReadDirFiles()
@@ -565,6 +570,7 @@ void testGetAttrOnPath()
 
     // cleanup
     freeWebsite(website);
+    deleteFuseData(fuseData);
 }
 
 void testReadOnPath()
@@ -616,6 +622,57 @@ void testGetAttrOnMountedDirectory()
     time_t currentTime = time(NULL);
     assert(st.st_mtime > 0);
     assert(currentTime - st.st_mtime <= 5);
+
+    deleteFuseData(fuseData);
+}
+
+void testFTP()
+{
+    char url[] = "ftp://ftp.slackware.com/welcome.msg";
+    char file[] = "welcome.msg";
+
+    CURLcode curlStatus = util_downloadURL(url, file);
+    assert(curlStatus == CURLE_OK);
+
+    char *contents = util_readEntireFile(file);
+
+    // Verify beginning and end of string
+    int len = strlen(contents);
+    assert(len > 100);
+    assert(strstr(contents, "Oregon") != 0);
+
+    // Cleanup
+    free(contents);
+    remove(file);
+}
+
+void testFTPInFUSE()
+{
+    FuseData *fuseData = initFuseData();
+
+    char url[] = "/ftp:\\\\ftp.slackware.com\\welcome.msg";
+    char *urlNoSlash = url + 1;
+
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
+    // download data using getattr
+    int ret = operations_getattr(url, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    // read data using read()
+    char *contents = calloc(4096, 1);
+    int fileLength = operations_read(url, contents, 0, 0, fuseData);
+    int strLength = strlen(contents);
+
+    // verify length and file contents
+    assert(strstr(contents, "Oregon") != 0);
+    assert(strLength > 100);
+    assert(strLength == fileLength);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(contents);
 }
 
 int main()
@@ -643,6 +700,8 @@ int main()
     testGetAttrOnPath();
     testReadOnPath();
     testGetAttrOnMountedDirectory();
+    testFTP();
+    testFTPInFUSE();
 
     printf("Tests passed!\n");
     return 0;
