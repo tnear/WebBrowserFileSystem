@@ -6,7 +6,7 @@
 
 static struct stat regular_file =
 {
-    .st_mode = S_IFREG | 0777
+    .st_mode = S_IFREG | 0444
 };
 
 typedef int (*fill_dir_t) (void *buf, const char *name,

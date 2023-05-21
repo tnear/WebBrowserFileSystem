@@ -28,7 +28,8 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
     // for root path, set permissions then exit
     if (strcmp(fusePath, "/") == 0)
     {
-        stbuf->st_mode = S_IFDIR | 0400;
+        stbuf->st_mode = S_IFDIR | 0777;
+        stbuf->st_mtime = time(NULL);
         return 0;
     }
 

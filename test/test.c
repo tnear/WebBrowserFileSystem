@@ -137,8 +137,8 @@ void testGetAttrURL()
 
     // verify getattr result
     assert(st.st_size >= 1000 && st.st_size <= 10000);
-    // verify read/write/execute permissions
-    assert(st.st_mode == (S_IFREG | 0777));
+    // verify read permissions
+    assert(st.st_mode == (S_IFREG | 0444));
 
     // verify timestamp
     time_t currentTime = time(NULL);
@@ -567,7 +567,7 @@ void testGetAttrOnPath()
     freeWebsite(website);
 }
 
-void testGetReadOnPath()
+void testReadOnPath()
 {
     char filename[] = "/www.example.com/path";
     char *filenameNoSlash = filename + 1;
@@ -598,6 +598,26 @@ void testGetReadOnPath()
     freeWebsite(website);
 }
 
+void testGetAttrOnMountedDirectory()
+{
+    FuseData *fuseData = initFuseData();
+    char rootDir[] = "/";
+
+    struct stat st;
+    memset(&st, 0, sizeof(st));
+
+    int ret = operations_getattr(rootDir, &st, fuseData);
+    assert(ret == 0);
+    
+    // verify permissions
+    assert(st.st_mode == (S_IFDIR | 0777));
+
+    // verify timestamp
+    time_t currentTime = time(NULL);
+    assert(st.st_mtime > 0);
+    assert(currentTime - st.st_mtime <= 5);
+}
+
 int main()
 {
     testDownloadURL();
@@ -621,7 +641,8 @@ int main()
     testGetFileNames();
     testLookupByFilename();
     testGetAttrOnPath();
-    testGetReadOnPath();
+    testReadOnPath();
+    testGetAttrOnMountedDirectory();
 
     printf("Tests passed!\n");
     return 0;
