@@ -538,14 +538,15 @@ void testLookupByFilename()
     freeWebsite(wLookup);
 }
 
-void testLookupOnPath()
+void testGetAttrOnPath()
 {
     FuseData *fuseData = initFuseData();
 
     // insert website which has a path ("my_path")
     char *fusePath = "/my_path";
     char *fusePathNoSlash = fusePath + 1;
-    Website *website = initWebsite("example.com/my_path", fusePathNoSlash, "data here...");
+    char html[] = "data here...";
+    Website *website = initWebsite("example.com/my_path", fusePathNoSlash, html);
     insertWebsite(fuseData->db, website);
 
     struct stat st;
@@ -556,7 +557,7 @@ void testLookupOnPath()
     assert(ret == CURLE_OK);
 
     // verify getattr result
-    assert(st.st_size == 12);
+    assert(st.st_size == strlen(html));
 
     // verify timestamp
     time_t currentTime = time(NULL);
@@ -564,7 +565,37 @@ void testLookupOnPath()
 
     // cleanup
     freeWebsite(website);
+}
 
+void testGetReadOnPath()
+{
+    char filename[] = "/www.example.com/path";
+    char *filenameNoSlash = filename + 1;
+    char path[] = "/path";
+    char *pathNoSlash = path + 1;
+
+    // allocate sufficient space
+    char *buffer = calloc(4096, 1);
+
+    char htmlData[] = "my data...";
+
+    size_t size = 0; // unused
+    off_t offset = 0; // unused
+
+    // add website to database
+    FuseData *fuseData = initFuseData();
+    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData);
+    insertWebsite(fuseData->db, website);
+
+    // read file, verify data
+    int fileLength = operations_read(path, buffer, size, offset, fuseData);
+    assert(strcmp(buffer, htmlData) == 0);
+    assert(strlen(buffer) == strlen(htmlData));
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(buffer);
+    freeWebsite(website);
 }
 
 int main()
@@ -589,7 +620,8 @@ int main()
     testLookupURL();
     testGetFileNames();
     testLookupByFilename();
-    testLookupOnPath();
+    testGetAttrOnPath();
+    testGetReadOnPath();
 
     printf("Tests passed!\n");
     return 0;

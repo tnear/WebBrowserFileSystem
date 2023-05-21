@@ -4,5 +4,8 @@ src/fuse-main
 test/*.o
 test/test
 
+# Mounted files
+src/mnt/*
+
 # Crash dumps
 *.core

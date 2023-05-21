@@ -137,10 +137,21 @@ int operations_read(const char *fusePath, char *buf, size_t size,
 {
     // fusePath is of form: "http:\\\\example.com"
     // use getURL to convert above to: "http://example.com"
+    // OR
+    // fusePath: "/a"
+    // url:       "a"
     char url[FUSE_PATH_MAX] = {};
     getUrlFromFusePath(url, fusePath, fuseData);
 
+    // first, try lookup on url
     Website *website = lookupWebsiteByUrl(fuseData->db, url);
+    if (!website)
+    {
+        // now try filename
+        website = lookupWebsiteByFilename(fuseData->db, url);
+    }
+
+    // the website must exist in database
     assert(website);
 
     // copy to buffer
