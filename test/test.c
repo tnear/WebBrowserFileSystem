@@ -121,8 +121,7 @@ void testGetAttrURL()
     char *full_filename = "/www.example.com";
     char *filename = full_filename + 1; // ignore leading slash
 
-    struct stat st;
-    memset(&st, 0, sizeof(st));
+    struct stat st = {};
     FuseData *fuseData = initFuseData();
     assert(getWebsiteCount(fuseData->db) == 0);
 
@@ -152,8 +151,7 @@ void testGetAttrFakeURL()
 {
     char *full_filename = "/www.fake_url_example_123_xyz.net";
 
-    struct stat st;
-    memset(&st, 0, sizeof(st));
+    struct stat st = {};
     FuseData *fuseData = initFuseData();
 
     int ret = operations_getattr(full_filename, &st, fuseData);
@@ -554,8 +552,7 @@ void testGetAttrOnPath()
     Website *website = initWebsite("example.com/my_path", fusePathNoSlash, html);
     insertWebsite(fuseData->db, website);
 
-    struct stat st;
-    memset(&st, 0, sizeof(st));
+    struct stat st = {};
 
     // verify successful lookup of path (NOT url)
     int ret = operations_getattr(fusePath, &st, fuseData);
@@ -609,8 +606,7 @@ void testGetAttrOnMountedDirectory()
     FuseData *fuseData = initFuseData();
     char rootDir[] = "/";
 
-    struct stat st;
-    memset(&st, 0, sizeof(st));
+    struct stat st = {};
 
     int ret = operations_getattr(rootDir, &st, fuseData);
     assert(ret == 0);
@@ -653,8 +649,7 @@ void testFTPInFUSE()
     char url[] = "/ftp:\\\\ftp.slackware.com\\welcome.msg";
     char *urlNoSlash = url + 1;
 
-    struct stat st;
-    memset(&st, 0, sizeof(st));
+    struct stat st = {};
 
     // download data using getattr
     int ret = operations_getattr(url, &st, fuseData);
@@ -761,6 +756,20 @@ void testDeleteURL()
     freeWebsite(website);
 }
 
+void testFuseBuiltinName()
+{
+    // fuse creates a few builtin names (ex: /BDMV) which should be ignored
+    FuseData *fuseData = initFuseData();
+
+    char url[] = "/BDMV";
+
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(url, &st, fuseData);
+    assert(ret == CURLE_COULDNT_RESOLVE_HOST);
+}
+
 void testDuplicatePath()
 {
     // todo: fix this crash
@@ -801,6 +810,7 @@ int main()
     testReadOffset();
     testDeleteURL();
     testDuplicatePath();
+    testFuseBuiltinName();
 
     printf("Tests passed!\n");
     return 0;

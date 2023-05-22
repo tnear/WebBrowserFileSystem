@@ -171,6 +171,7 @@ Website* lookupWebsite(FuseData *fuseData, const char *url, const char *filename
         if (!util_isURL(url))
         {
             // not URL, don't waste time networking
+            *curlStatus = CURLE_COULDNT_RESOLVE_HOST;
             return 0;
         }
 
