@@ -1,6 +1,7 @@
-#ifndef OPERATIONS_MAIN_H
-#define OPERATIONS_MAIN_H
+#ifndef OPERATIONS_H
+#define OPERATIONS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <curl/curl.h>
 #include <sys/stat.h>
@@ -25,7 +26,8 @@ int operations_read(const char *path, char *buf, size_t size,
 
 void getUrlFromFusePath(char *url, const char *fusePath, struct FuseData *fuseData);
 
-struct Website* lookupWebsite(struct FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus);
+struct Website* lookupWebsite(struct FuseData *fuseData, const char *fusePath, CURLcode *curlStatus);
 struct Website* downloadWebsite(struct FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus);
+bool _checkIfSamePathWithDifferentUrl(struct FuseData *fuseData, struct Website *website, const char *url);
 
 #endif

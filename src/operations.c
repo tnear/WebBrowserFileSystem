@@ -32,19 +32,10 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
         return 0;
     }
 
-    // get url from fusePath, ex:
-    // fusePath: /example.com\\a
-    //      url:  example.com/a
-    //  filname:              a
-    char url[FUSE_PATH_MAX] = {};
-    getUrlFromFusePath(url, fusePath, fuseData);
     CURLcode curlStatus = CURLE_OK; // assume okay until network request
 
-    // get file name from url
-    char filename[FUSE_PATH_MAX] = {};
-    util_urlToFileName(filename, url);
-
-    Website *website = lookupWebsite(fuseData, url, filename, &curlStatus);
+    // get website
+    Website *website = lookupWebsite(fuseData, fusePath, &curlStatus);
     if (curlStatus != CURLE_OK)
     {
         return curlStatus;
@@ -109,7 +100,7 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     Website *website = lookupWebsiteByUrl(fuseData->db, url);
     if (!website)
     {
-        // now try filename
+        // assume that url is a filename, so try looking up on that
         website = lookupWebsiteByFilename(fuseData->db, url);
     }
 
@@ -160,13 +151,27 @@ void getUrlFromFusePath(char *url, const char *fusePath, FuseData *fuseData)
     free(pathCopy);
 }
 
-Website* lookupWebsite(FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus)
+Website* lookupWebsite(FuseData *fuseData, const char *fusePath, CURLcode *curlStatus)
 {
+    // get url from fusePath, ex:
+    // fusePath: /example.com\\a
+    //      url:  example.com/a
+    //  filname:              a
+    char url[FUSE_PATH_MAX] = {};
+    getUrlFromFusePath(url, fusePath, fuseData);
+
+    // get file name from url
+    char filename[FUSE_PATH_MAX] = {};
+    util_urlToFileName(filename, url);
+
     // lookup by filename first
     // this is needed because sometimes this function will only be called
     // with the filename (ex: "/a" for above example) with no reference to url
     Website *website = lookupWebsiteByFilename(fuseData->db, filename);
-    if (!website)
+
+    bool isSame = _checkIfSamePathWithDifferentUrl(fuseData, website, url);
+
+    if (isSame || !website)
     {
         if (!util_isURL(url))
         {
@@ -179,9 +184,9 @@ Website* lookupWebsite(FuseData *fuseData, const char *url, const char *filename
         website = lookupWebsiteByUrl(fuseData->db, url);
     }
 
-    // if this url is not in database, it hasn't been seen before, so download it
     if (!website)
     {
+        // url has not been seen before, so download it
         website = downloadWebsite(fuseData, url, filename, curlStatus);
     }
 
@@ -213,4 +218,22 @@ Website* downloadWebsite(FuseData *fuseData, const char *url, const char *filena
     free(contents);
 
     return website;
+}
+
+bool _checkIfSamePathWithDifferentUrl(FuseData *fuseData, Website *website, const char *url)
+{
+    // the same path can exist for different urls:
+    // ex: example.com/path and example.net/path
+    // these both map to files called "path"
+    // this function detects this case and deletes the older one
+    if (website && util_isURL(url) && strcmp(website->url, url) != 0)
+    {
+        // found same path, but different url
+        // delete this website to prepare to create a new one
+        deleteURL(fuseData->db, website->url);
+        freeWebsite(website);
+        return true;
+    }
+
+    return false;
 }

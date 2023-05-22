@@ -756,27 +756,56 @@ void testDeleteURL()
     freeWebsite(website);
 }
 
+// fuse creates a few builtin names (ex: /BDMV) which should be ignored
 void testFuseBuiltinName()
 {
-    // fuse creates a few builtin names (ex: /BDMV) which should be ignored
     FuseData *fuseData = initFuseData();
 
     char url[] = "/BDMV";
 
     struct stat st = {};
 
-    // download data using getattr
+    // verify error for this invalid name
     int ret = operations_getattr(url, &st, fuseData);
     assert(ret == CURLE_COULDNT_RESOLVE_HOST);
+
+    // cleanup
+    deleteFuseData(fuseData);
 }
 
 void testDuplicatePath()
 {
-    // todo: fix this crash
+    // this test uses two different urls with same path (filename)
+    // the current behavior when this is detected is to delete the old one
+    // then download the new one
+    FuseData *fuseData = initFuseData();
 
-    // example.com/maps
-    // and
-    // google.com/maps
+    const char url[] = "www.example.com/my_path";
+    const char path[] = "my_path";
+    const char html[] = "<HTML>";
+
+    const char url2[] = "/www.example.net/my_path";
+
+    // create website with path = "my_path"
+    Website *website = initWebsite(url, path, html);
+    insertWebsite(fuseData->db, website);
+    freeWebsite(website);
+
+    // create second website with a different url but same path (my_path)
+    struct stat st = {};
+    int ret = operations_getattr(url2, &st, fuseData);
+    assert(ret == 0);
+
+    size_t size = 4096;
+    char *buffer = calloc(size, 1);
+
+    // verify second url can be read correctly
+    int length = operations_read(url2, buffer, size, 0, fuseData);
+    assert(length > 1024 && length < 2048);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(buffer);
 }
 
 int main()
