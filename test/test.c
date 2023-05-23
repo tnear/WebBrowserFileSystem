@@ -891,6 +891,61 @@ void testUnlinkPath()
     deleteFuseData(fuseData);
 }
 
+void testDictionaryNetworkProtocol()
+{
+    FuseData *fuseData = initFuseData();
+
+    char url[] = "/dict:\\\\dict.org\\m:curl";
+    char *urlNoSlash = url + 1;
+
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(url, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    // read data using read()
+    char *contents = calloc(4096, 1);
+    int fileLength = operations_read(url, contents, 4096, 0, fuseData);
+    int strLength = strlen(contents);
+
+    // verify length and file contents
+    assert(strstr(contents, "Curb") != 0);
+    assert(strLength > 100);
+    assert(strLength == fileLength);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(contents);
+}
+
+void testHttps()
+{
+    FuseData *fuseData = initFuseData();
+
+    char url[] = "/https:\\\\example.com";
+    char *urlNoSlash = url + 1;
+
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(url, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    // read data using read()
+    char *contents = calloc(4096, 1);
+    int fileLength = operations_read(url, contents, 4096, 0, fuseData);
+    int strLength = strlen(contents);
+
+    // verify length and file contents
+    assert(strstr(contents, "<!doctype html>") != 0);
+    assert(strLength == fileLength);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(contents);
+}
+
 int main()
 {
     testDownloadURL();
@@ -926,6 +981,8 @@ int main()
     testDatabaseFileName();
     testUnlink();
     testUnlinkPath();
+    testDictionaryNetworkProtocol();
+    testHttps();
 
     printf("Tests passed!\n");
     return 0;

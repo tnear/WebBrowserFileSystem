@@ -11,3 +11,8 @@ $ gdb <prog>
 // -s = single-threaded (aids gdb)
 // -d = debug (aids gdb)
 // -f = run in foreground (required for printf statements)
+
+Supported protocols:
+HTTP/S
+FTP
+DICT
