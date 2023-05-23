@@ -12,8 +12,8 @@ FuseData* initFuseData()
 
 void deleteFuseData(FuseData *fuseData)
 {
-    // close database
-    sqlite3_close(fuseData->db);
+    // close and delete database
+    closeDatabase(fuseData->db);
 
     // free memory
     free(fuseData);

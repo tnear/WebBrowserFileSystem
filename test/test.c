@@ -19,7 +19,7 @@
 
 #define FUSE_PATH_MAX 4096
 
-bool isFile(const char *filename)
+static bool isFile(const char *filename)
 {
     return access(filename, F_OK) == 0;
 }
@@ -435,7 +435,7 @@ void testCreateDatabase()
     assert(!fake);
 
     // cleanup
-    sqlite3_close(db);
+    closeDatabase(db);
     freeWebsite(website);
     freeWebsite(wLookup);
 }
@@ -461,7 +461,7 @@ void testLookupURL()
     assert(!lookupURL(db, "fake_url"));
 
     // cleanup
-    sqlite3_close(db);
+    closeDatabase(db);
     freeWebsite(website);
 }
 
@@ -499,6 +499,8 @@ void testGetFileNames()
     assert(llGetLength(node) == 2);
     assert(llContainsString(node, path1));
     assert(llContainsString(node, path2));
+
+    closeDatabase(db);
 }
 
 void testFuseData()
@@ -536,7 +538,7 @@ void testLookupByFilename()
     assert(!fake);
 
     // cleanup
-    sqlite3_close(db);
+    closeDatabase(db);
     freeWebsite(website);
     freeWebsite(wLookup);
 }
@@ -752,7 +754,7 @@ void testDeleteURL()
     assert(!lookupURL(db, url));
 
     // cleanup
-    sqlite3_close(db);
+    closeDatabase(db);
     freeWebsite(website);
 }
 
@@ -808,6 +810,16 @@ void testDuplicatePath()
     free(buffer);
 }
 
+void testDatabaseFileName()
+{
+    sqlite3 *db = createDatabase();
+    const char *dbFile = sqlite3_db_filename(db, "main");
+
+    assert(strstr(dbFile, DB_FILENAME));
+
+    closeDatabase(db);
+}
+
 int main()
 {
     testDownloadURL();
@@ -840,6 +852,7 @@ int main()
     testDeleteURL();
     testDuplicatePath();
     testFuseBuiltinName();
+    testDatabaseFileName();
 
     printf("Tests passed!\n");
     return 0;

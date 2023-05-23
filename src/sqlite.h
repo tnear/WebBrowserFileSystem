@@ -7,7 +7,10 @@
 struct Website;
 struct Node;
 
+#define DB_FILENAME "websites.db"
+
 sqlite3* createDatabase();
+void closeDatabase(sqlite3 *db);
 int _createWebsiteTable(sqlite3 *db);
 int insertWebsite(sqlite3 *db, struct Website *website);
 struct Website *lookupWebsiteByUrl(sqlite3 *db, const char *url);

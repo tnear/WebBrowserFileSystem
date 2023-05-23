@@ -6,22 +6,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 // Website table for storing url, path, and html data
 #define WEBSITE "Website"
 
+static bool isFile(const char *filename)
+{
+    return access(filename, F_OK) == 0;
+}
+
 sqlite3* createDatabase()
 {
+    if (isFile(DB_FILENAME))
+    {
+        // delete old db file
+        remove(DB_FILENAME);
+    }
+
     sqlite3 *db = NULL;
 
     // create in-memory database
-    int rc = sqlite3_open(":memory:", &db);
+    int rc = sqlite3_open(DB_FILENAME, &db);
     assert(rc == SQLITE_OK);
 
     rc = _createWebsiteTable(db);
     assert(rc == SQLITE_OK);
 
     return db;
+}
+
+void closeDatabase(sqlite3 *db)
+{
+    sqlite3_close(db);
+
+    // delete database file
+    remove(DB_FILENAME);
 }
 
 int _createWebsiteTable(sqlite3 *db)

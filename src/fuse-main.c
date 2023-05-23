@@ -2,13 +2,8 @@
 
 #include "fuseData.h"
 #include "operations.h"
-#include "linkedList.h"
-#include "util.h"
 
 #include <fuse.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 // global variable for fuse data
 FuseData *g_fuseData = NULL;
@@ -47,8 +42,8 @@ int main(int argc, char* argv[])
     int ret = fuse_main(argc, argv, &urlfsOperations, NULL);
 
     // cleanup
-    deleteFuseData(g_fuseData);
     printf("\n\nfuse-main exiting...\n");
+    deleteFuseData(g_fuseData);
 
     return ret;
 }
