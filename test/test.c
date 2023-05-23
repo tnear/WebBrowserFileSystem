@@ -859,6 +859,38 @@ void testUnlink()
     deleteFuseData(fuseData);
 }
 
+void testUnlinkPath()
+{
+    // unlinking (deleting) data
+    FuseData *fuseData = initFuseData();
+
+    const char url[] = "www.example.com/path";
+    const char fusePath[] = "/path";
+    const char *path = fusePath + 1;
+
+    // create website
+    Website *website = initWebsite(url, path, "");
+    insertWebsite(fuseData->db, website);
+    freeWebsite(website);
+
+    // verify entry
+    Node *node = getFileNames(fuseData->db);
+    assert(llGetLength(node) == 1);
+    llFreeList(node);
+
+    // delete website by path (not url)
+    int ret = operations_unlink(fusePath, fuseData);
+    assert(ret == 0);
+
+    // verify empty after deleting path
+    node = getFileNames(fuseData->db);
+    assert(llGetLength(node) == 0);
+    assert(!node);
+
+    // cleanup
+    deleteFuseData(fuseData);
+}
+
 int main()
 {
     testDownloadURL();
@@ -893,6 +925,7 @@ int main()
     testFuseBuiltinName();
     testDatabaseFileName();
     testUnlink();
+    testUnlinkPath();
 
     printf("Tests passed!\n");
     return 0;

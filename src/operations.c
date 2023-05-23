@@ -128,11 +128,15 @@ int operations_unlink(const char *fusePath, FuseData *fuseData)
     char url[FUSE_PATH_MAX] = {};
     getUrlFromFusePath(url, fusePath, fuseData);
 
-    // check if this url exists
-    if (lookupURL(fuseData->db, url))
+    // check if this website exists
+    CURLcode curlStatus = CURLE_OK;
+    Website *website = lookupWebsite(fuseData, fusePath, &curlStatus);
+    if (website)
     {
         // if so, delete it
-        deleteURL(fuseData->db, url);
+        assert(curlStatus == CURLE_OK);
+        deleteURL(fuseData->db, website->url);
+        freeWebsite(website);
     }
 
     return 0;
