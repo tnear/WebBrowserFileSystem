@@ -17,12 +17,14 @@ typedef int (*fill_dir_t) (void *buf, const char *name,
 struct FuseData;
 struct Website;
 
-int operations_getattr(const char *path, struct stat *stbuf, struct FuseData *fuseData);
+int operations_getattr(const char *fusePath, struct stat *stbuf, struct FuseData *fuseData);
 
-int operations_readdir(const char *path, void *buf, fill_dir_t filler, off_t offset, struct FuseData *fuseData);
+int operations_readdir(const char *fusePath, void *buf, fill_dir_t filler, off_t offset, struct FuseData *fuseData);
 
-int operations_read(const char *path, char *buf, size_t size,
+int operations_read(const char *fusePath, char *buf, size_t size,
     off_t offset, struct FuseData *fuseData);
+
+int operations_unlink(const char *fusePath, struct FuseData *fuseData);
 
 void getUrlFromFusePath(char *url, const char *fusePath, struct FuseData *fuseData);
 

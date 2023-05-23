@@ -499,6 +499,7 @@ void testGetFileNames()
     assert(llGetLength(node) == 2);
     assert(llContainsString(node, path1));
     assert(llContainsString(node, path2));
+    llFreeList(node);
 
     closeDatabase(db);
 }
@@ -820,6 +821,44 @@ void testDatabaseFileName()
     closeDatabase(db);
 }
 
+void testUnlink()
+{
+    // unlinking (deleting) data
+    FuseData *fuseData = initFuseData();
+
+    // invalid website
+    int ret = operations_unlink("fake_path", fuseData);
+    assert(ret == 0);
+    assert(!getFileNames(fuseData->db));
+
+    const char url[] = "www.example.com";
+    const char fusePath[] = "/www.example.com";
+    const char path[] = "example";
+    const char html[] = "<HTML></HTML>";
+
+    // create website
+    Website *website = initWebsite(url, path, html);
+    insertWebsite(fuseData->db, website);
+    freeWebsite(website);
+
+    // verify entry
+    Node *node = getFileNames(fuseData->db);
+    assert(llGetLength(node) == 1);
+    llFreeList(node);
+
+    // delete website
+    ret = operations_unlink(fusePath, fuseData);
+    assert(ret == 0);
+
+    // verify empty
+    node = getFileNames(fuseData->db);
+    assert(llGetLength(node) == 0);
+    assert(!node);
+
+    // cleanup
+    deleteFuseData(fuseData);
+}
+
 int main()
 {
     testDownloadURL();
@@ -853,6 +892,7 @@ int main()
     testDuplicatePath();
     testFuseBuiltinName();
     testDatabaseFileName();
+    testUnlink();
 
     printf("Tests passed!\n");
     return 0;

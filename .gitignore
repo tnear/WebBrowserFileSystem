@@ -9,3 +9,6 @@ src/mnt/*
 
 # Crash dumps
 *.core
+
+# Database file
+src/websites.db

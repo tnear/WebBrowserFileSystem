@@ -121,6 +121,23 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     return len;
 }
 
+// used to delete websites (files)
+int operations_unlink(const char *fusePath, FuseData *fuseData)
+{
+    // get url from fusePath
+    char url[FUSE_PATH_MAX] = {};
+    getUrlFromFusePath(url, fusePath, fuseData);
+
+    // check if this url exists
+    if (lookupURL(fuseData->db, url))
+    {
+        // if so, delete it
+        deleteURL(fuseData->db, url);
+    }
+
+    return 0;
+}
+
 // ex:
 // fusePath: /example.com\\a
 //      url:  example.com/a

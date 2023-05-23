@@ -29,11 +29,17 @@ int urlfs_read(const char *path, char *buf, size_t size, off_t offset,
     return operations_read(path, buf, size, offset, g_fuseData);
 }
 
+int urlfs_unlink(const char* path)
+{
+    return operations_unlink(path, g_fuseData);
+}
+
 struct fuse_operations urlfsOperations =
 {
     .getattr = urlfs_getattr,
     .read    = urlfs_read,
-    .readdir = urlfs_readdir
+    .readdir = urlfs_readdir,
+    .unlink  = urlfs_unlink
 };
 
 int main(int argc, char* argv[])
