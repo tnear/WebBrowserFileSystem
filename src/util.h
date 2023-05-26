@@ -5,7 +5,12 @@
 #include <stddef.h>
 #include <curl/curl.h>
 
+#define BYTE_SIZE_CAP 50000
+#define BYTE_SIZE_PREVIEW 100
+
 CURLcode util_downloadURL(const char *url, const char *filename);
+int getContentLength(const char *url);
+CURLcode getFirst100Bytes(char *data, const char *url);
 
 // Read entire file entire buffer
 // Note: caller must free(buffer)

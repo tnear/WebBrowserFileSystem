@@ -946,6 +946,35 @@ void testHttps()
     free(contents);
 }
 
+void testCurlHeader()
+{
+    // test site with content-length set
+    char url[] = "example.com";
+    int size = getContentLength(url);
+    assert(size > 500 && size < 2000);
+
+    // test site w/o content-length set
+    char url2[] = "https://www.northwestern.edu";
+    size = getContentLength(url2);
+    assert(size == 0);
+}
+
+void testGetFirst100Bytes()
+{
+    char data[BYTE_SIZE_PREVIEW + 1] = {};
+    char url[] = "https://code.jquery.com/jquery-3.5.0.min.js";
+    assert(strlen(data) == 0);
+
+    // get first 100 bytes of jquery
+    CURLcode res = getFirst100Bytes(data, url);
+
+    // verify result
+    assert(res == CURLE_OK);
+    assert(strlen(data) == BYTE_SIZE_PREVIEW);
+    char expString[] = "/*! jQuery";
+    assert(strncmp(data, expString, strlen(expString)) == 0);
+}
+
 int main()
 {
     testDownloadURL();
@@ -983,6 +1012,8 @@ int main()
     testUnlinkPath();
     testDictionaryNetworkProtocol();
     testHttps();
+    testCurlHeader();
+    testGetFirst100Bytes();
 
     printf("Tests passed!\n");
     return 0;
