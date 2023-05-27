@@ -14,7 +14,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
+#include <sys/mman.h>
 
 #define FUSE_PATH_MAX 4096
 
@@ -40,8 +40,6 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
     {
         return curlStatus;
     }
-
-    assert(website);
 
     // todo: save html length in database?
     stbuf->st_size = strlen(website->html);
@@ -88,9 +86,9 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
 int operations_read(const char *fusePath, char *buf, size_t size,
     off_t offset, FuseData *fuseData)
 {
-    // fusePath is of form: "http:\\\\example.com"
+    // fusePath can be of form: "http:\\\\example.com"
     // use getURL to convert above to: "http://example.com"
-    // OR
+    // OR be of path-form, in which case:
     // fusePath: "/a"
     // url:       "a"
     char url[FUSE_PATH_MAX] = {};
@@ -108,8 +106,12 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     // if this assert fails, it means readattr() did not download url correctly
     assert(website);
 
+    struct stat statbuf = {};
+
+    // get data starting point using either sqlite or mmap
+    char *stringStartingPoint = _getStringStartingPoint(fuseData, website, &statbuf, offset);
+    
     // copy to buffer up to 'size' starting at 'offset'
-    char *stringStartingPoint = website->html + offset;
     strncpy(buf, stringStartingPoint, size);
 
     // return length written
@@ -117,11 +119,16 @@ int operations_read(const char *fusePath, char *buf, size_t size,
 
     // free memory
     freeWebsite(website);
+    if (fuseData->useMmap)
+    {
+        // unmap data
+        munmap(stringStartingPoint, statbuf.st_size);
+    }
 
     return len;
 }
 
-// used to delete websites (files)
+// used to delete (unlink) websites (files)
 int operations_unlink(const char *fusePath, FuseData *fuseData)
 {
     // get url from fusePath
@@ -190,6 +197,7 @@ Website* lookupWebsite(FuseData *fuseData, const char *fusePath, CURLcode *curlS
     // with the filename (ex: "/a" for above example) with no reference to url
     Website *website = lookupWebsiteByFilename(fuseData->db, filename);
 
+    // check if we've seen this path before with a different url
     bool isSame = _checkIfSamePathWithDifferentUrl(fuseData, website, url);
 
     if (isSame || !website)
@@ -273,7 +281,7 @@ bool _checkIfSamePathWithDifferentUrl(FuseData *fuseData, Website *website, cons
 char* _getPreviewData(const char *filename, const char *url)
 {
     // hit limit
-    printf("%s is over size limit, downloading 100-byte preview instead...\n", url);
+    printf("URL '%s' is over size limit, downloading 100-byte preview instead...\n", url);
 
     // download first 100 bytes
     char *contents = calloc(BYTE_SIZE_PREVIEW + 1, 1);
@@ -288,4 +296,44 @@ char* _getPreviewData(const char *filename, const char *url)
     // return data
     // todo: would be better design to use file alone
     return contents;
+}
+
+char* _getStringStartingPoint(FuseData *fuseData, Website *website, struct stat *statbuf, off_t offset)
+{
+    char *stringStartingPoint = NULL;
+    if (fuseData->useMmap)
+    {
+        // use mmap()
+        printf("Using mmap...\n");
+        // remove temp mmap file if it already exists
+        char mmapPath[] = "/tmp/mmap_test.txt";
+        remove(mmapPath);
+
+        // write html data to /tmp file
+        FILE *fp = fopen(mmapPath, "w");
+        fputs(website->html, fp);
+        fclose(fp);
+
+        // open file and get attributes
+        fp = fopen(mmapPath, "r");
+        int fd = fileno(fp);
+        int err = fstat(fd, statbuf);
+        assert(err == 0);
+
+        // mmap file while honoring offset
+        int protection = PROT_READ | PROT_WRITE;
+        stringStartingPoint = mmap(NULL, statbuf->st_size, protection, MAP_PRIVATE, fd, offset);
+        assert(stringStartingPoint != MAP_FAILED);
+        assert(statbuf->st_size - offset > 0);
+        assert(strlen(stringStartingPoint) == statbuf->st_size - offset);
+
+        remove(mmapPath);
+    }
+    else
+    {
+        // use sqlite
+        stringStartingPoint = website->html + offset;
+    }
+    
+    return stringStartingPoint;
 }

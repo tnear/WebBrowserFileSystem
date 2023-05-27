@@ -650,7 +650,6 @@ void testFTPInFUSE()
     FuseData *fuseData = initFuseData();
 
     char url[] = "/ftp:\\\\ftp.slackware.com\\welcome.msg";
-    char *urlNoSlash = url + 1;
 
     struct stat st = {};
 
@@ -896,7 +895,6 @@ void testDictionaryNetworkProtocol()
     FuseData *fuseData = initFuseData();
 
     char url[] = "/dict:\\\\dict.org\\m:curl";
-    char *urlNoSlash = url + 1;
 
     struct stat st = {};
 
@@ -924,7 +922,6 @@ void testHttps()
     FuseData *fuseData = initFuseData();
 
     char url[] = "/https:\\\\example.com";
-    char *urlNoSlash = url + 1;
 
     struct stat st = {};
 
@@ -980,7 +977,6 @@ void testSizeLimit()
     FuseData *fuseData = initFuseData();
 
     char fusePath[] = "/https://code.jquery.com/jquery-3.5.0.min.js";
-    char *urlNoSlash = fusePath + 1;
 
     struct stat st = {};
 
@@ -1001,6 +997,100 @@ void testSizeLimit()
     // cleanup
     deleteFuseData(fuseData);
     free(contents);
+}
+
+void testMmap()
+{
+    // set useMmap to true
+    FuseData *fuseData = initFuseData();
+    fuseData->useMmap = true;
+
+    char url[] = "/example.com";
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(url, &st, fuseData);
+    assert(ret == CURLE_OK);
+    assert(fuseData->useMmap);
+
+    // read data using read()
+    char *contents = calloc(4096, 1);
+    int fileLength = operations_read(url, contents, 4096, 0, fuseData);
+    int strLength = strlen(contents);
+
+    // verify length and file contents
+    assert(strstr(contents, "<!doctype html>") != 0);
+    assert(strLength == fileLength);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(contents);
+}
+
+// create a file with content: 'a' * 4096 + 'b' * 4
+static FILE* createFile(const char *filename, struct stat *statbuf)
+{
+    FILE *fp = fopen(filename, "wb");
+    int bufferSize = 4096;
+    char buffer[bufferSize];
+    memset(buffer, 'a', bufferSize);
+    fwrite(buffer, sizeof(char), bufferSize, fp);
+
+    int remainingSize = 4100 - bufferSize;
+    char remainingBuffer[remainingSize];
+    memset(remainingBuffer, 'b', remainingSize);
+
+    fwrite(remainingBuffer, sizeof(char), remainingSize, fp);
+    fclose(fp);
+
+    fp = fopen(filename, "r");
+    char buf[5000];
+    fgets(buf, 5000, fp);
+
+    int fd = fileno(fp);
+    
+    int err = fstat(fd, statbuf);
+    assert(err == 0);
+
+    return fp;
+}
+
+void testMmapOffset()
+{
+    // set useMmap to true
+    FuseData *fuseData = initFuseData();
+    fuseData->useMmap = true;
+
+    char url[] = "/example.com";
+    struct stat st = {};
+
+    char tmpFile[] = "tempFile.txt";
+    remove(tmpFile);
+    struct stat statbuf = {};
+    FILE *fp = createFile(tmpFile, &statbuf);
+
+    char *html = util_readEntireFile(tmpFile);
+
+    // create website
+    Website *website = initWebsite(url + 1, url + 1, html);
+    insertWebsite(fuseData->db, website);
+    freeWebsite(website);
+
+    // call read() with offset
+    off_t offset = 4096;
+    char *contents = calloc(4096, 1);
+    int fileLength = operations_read(url, contents, 4096, offset, fuseData);
+    int strLength = strlen(contents);
+
+    // verify data starts at offset (4096) instead of 0
+    assert(strcmp(contents, "bbbb") == 0);
+    assert(strLength == fileLength);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(contents);
+    remove(tmpFile);
+    free(html);
 }
 
 int main()
@@ -1043,6 +1133,8 @@ int main()
     testCurlHeader();
     testGetFirst100Bytes();
     testSizeLimit();
+    testMmap();
+    testMmapOffset();
 
     printf("Tests passed!\n");
     return 0;

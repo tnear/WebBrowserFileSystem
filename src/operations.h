@@ -32,5 +32,6 @@ struct Website* lookupWebsite(struct FuseData *fuseData, const char *fusePath, C
 struct Website* downloadWebsite(struct FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus);
 bool _checkIfSamePathWithDifferentUrl(struct FuseData *fuseData, struct Website *website, const char *url);
 char* _getPreviewData(const char *filename, const char *url);
+char* _getStringStartingPoint(struct FuseData *fuseData, struct Website *website, struct stat *statbuf, off_t offset);
 
 #endif

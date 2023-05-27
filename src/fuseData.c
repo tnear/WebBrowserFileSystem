@@ -6,6 +6,7 @@ FuseData* initFuseData()
 {
     FuseData *fuseData = malloc(sizeof(FuseData));
     fuseData->db = createDatabase();
+    fuseData->useMmap = false;
 
     return fuseData;
 }

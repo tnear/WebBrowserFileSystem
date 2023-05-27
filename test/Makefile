@@ -22,4 +22,4 @@ test: $(OBJS)
 
 .PHONY: clean
 clean:
-	rm -f test $(OBJS)
+	rm -f test $(OBJS) *.core

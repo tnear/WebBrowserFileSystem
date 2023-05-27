@@ -21,4 +21,4 @@ fuse-main: $(OBJS)
 
 .PHONY: clean
 clean:
-	rm -f fuse-main $(OBJS)
+	rm -f fuse-main $(OBJS) *.core

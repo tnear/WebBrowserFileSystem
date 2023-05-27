@@ -12,10 +12,31 @@ $ gdb <prog>
 // -d = debug (aids gdb)
 // -f = run in foreground (required for printf statements)
 
+Install:
+fuse
+sqlite
+any others?
+
 Supported protocols:
 HTTP/S
 FTP
 DICT
 
+Deleting files
+
 Large files:
 - set artificial cap then show preview for sites over that
+
+Challenges:
+- slash character
+- trying to save inside mounted directory
+- file attributes (permissions, name, timestamp)
+- memory leaks
+
+mmap
+- no native support, though still functional
+- fuse has its own buffer
+- mmap does work, uses extra copy
+- offset
+
+---
