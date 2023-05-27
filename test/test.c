@@ -950,12 +950,12 @@ void testCurlHeader()
 {
     // test site with content-length set
     char url[] = "example.com";
-    int size = getContentLength(url);
+    int size = getUrlContentLength(url);
     assert(size > 500 && size < 2000);
 
     // test site w/o content-length set
     char url2[] = "https://www.northwestern.edu";
-    size = getContentLength(url2);
+    size = getUrlContentLength(url2);
     assert(size == 0);
 }
 
@@ -973,6 +973,34 @@ void testGetFirst100Bytes()
     assert(strlen(data) == BYTE_SIZE_PREVIEW);
     char expString[] = "/*! jQuery";
     assert(strncmp(data, expString, strlen(expString)) == 0);
+}
+
+void testSizeLimit()
+{
+    FuseData *fuseData = initFuseData();
+
+    char fusePath[] = "/https://code.jquery.com/jquery-3.5.0.min.js";
+    char *urlNoSlash = fusePath + 1;
+
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(fusePath, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    // read data using read()
+    char *contents = calloc(2 * BYTE_SIZE_PREVIEW, 1);
+    int fileLength = operations_read(fusePath, contents, 2 * BYTE_SIZE_PREVIEW, 0, fuseData);
+    int strLength = strlen(contents);
+
+    // verify length and file contents
+    assert(strLength == BYTE_SIZE_PREVIEW);
+    char expString[] = "/*! jQuery";
+    assert(strncmp(contents, expString, strlen(expString)) == 0);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(contents);
 }
 
 int main()
@@ -1014,6 +1042,7 @@ int main()
     testHttps();
     testCurlHeader();
     testGetFirst100Bytes();
+    testSizeLimit();
 
     printf("Tests passed!\n");
     return 0;

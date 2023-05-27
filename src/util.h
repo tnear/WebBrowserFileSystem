@@ -9,7 +9,7 @@
 #define BYTE_SIZE_PREVIEW 100
 
 CURLcode util_downloadURL(const char *url, const char *filename);
-int getContentLength(const char *url);
+int getUrlContentLength(const char *url);
 CURLcode getFirst100Bytes(char *data, const char *url);
 
 // Read entire file entire buffer

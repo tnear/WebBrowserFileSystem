@@ -216,17 +216,28 @@ Website* lookupWebsite(FuseData *fuseData, const char *fusePath, CURLcode *curlS
 
 Website* downloadWebsite(FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus)
 {
-    *curlStatus = util_downloadURL(url, filename);
-    if (*curlStatus != CURLE_OK)
+    char *contents = NULL;
+    int contentLength = getUrlContentLength(url);
+    if (contentLength > BYTE_SIZE_CAP)
     {
-        // cannot download, return curl error
-        return NULL;
+        // over limit, return preview data (first 100 bytes)
+        contents = _getPreviewData(filename, url);
+    }
+    else
+    {
+        *curlStatus = util_downloadURL(url, filename);
+        if (*curlStatus != CURLE_OK)
+        {
+            // cannot download, return curl error
+            return NULL;
+        }
+
+        // read into buffer
+        contents = util_readEntireFile(filename);
     }
 
+    assert(contents);
     printf("Downloaded: %s\n", url);
-
-    // read into buffer
-    char *contents = util_readEntireFile(filename);
 
     // add to database
     Website *website = initWebsite(url, filename, contents);
@@ -257,4 +268,24 @@ bool _checkIfSamePathWithDifferentUrl(FuseData *fuseData, Website *website, cons
     }
 
     return false;
+}
+
+char* _getPreviewData(const char *filename, const char *url)
+{
+    // hit limit
+    printf("%s is over size limit, downloading 100-byte preview instead...\n", url);
+
+    // download first 100 bytes
+    char *contents = calloc(BYTE_SIZE_PREVIEW + 1, 1);
+    CURLcode curlCode = getFirst100Bytes(contents, url);
+    assert(curlCode == CURLE_OK);
+
+    // dump to file to be read by calling function
+    FILE *fp = fopen(filename, "w");
+    fputs(contents, fp);
+    fclose(fp);
+
+    // return data
+    // todo: would be better design to use file alone
+    return contents;
 }

@@ -16,3 +16,6 @@ Supported protocols:
 HTTP/S
 FTP
 DICT
+
+Large files:
+- set artificial cap then show preview for sites over that

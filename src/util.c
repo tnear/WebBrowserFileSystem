@@ -80,9 +80,15 @@ size_t _headerCallback(char *buffer, size_t size, size_t nitems, void *userData)
     // This function is called once for each line of header data.
     // Only update userData for the Content-Length line
     size_t length = size * nitems;
-    const char *header = "Content-Length:";
+    const char header[] = "Content-Length:";
+    const char header2[] = "content-length:"; // todo: case insensitive compare
     // search substring
     char *start = strstr(buffer, header);
+    if (!start)
+    {
+        // some sites return lower case
+        start = strstr(buffer, header2);
+    }
 
     if (start)
     {
@@ -96,7 +102,7 @@ size_t _headerCallback(char *buffer, size_t size, size_t nitems, void *userData)
     return length;
 }
 
-int getContentLength(const char *url)
+int getUrlContentLength(const char *url)
 {
     CURL *curl = curl_easy_init();
 
