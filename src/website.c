@@ -21,6 +21,8 @@ Website* initWebsite(const char *url, const char *path, const char *html)
     website->html[len] = '\0';
     strcpy(website->html, html);
 
+    website->htmlLen = len;
+
     return website;
 }
 

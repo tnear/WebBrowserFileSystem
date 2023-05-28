@@ -1225,7 +1225,7 @@ void testPathIsAlsoUrl()
     size_t size = 4096;
     char *buffer = calloc(size, 1);
 
-    // verify second url can be read correctly
+    // verify data from first url is retained ("<HTML>" instead of "<!doctype html>...")
     int length = operations_read(url2, buffer, size, 0, fuseData);
     assert(length == strlen(html));
     assert(strcmp(buffer, html) == 0);

@@ -40,8 +40,7 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
         return curlStatus;
     }
 
-    // todo: save html length in database?
-    stbuf->st_size = strlen(website->html);
+    stbuf->st_size = website->htmlLen;
     stbuf->st_mode = regular_file.st_mode;
     // set timestamp to current time
     stbuf->st_mtime = time(NULL);
@@ -167,15 +166,13 @@ void getUrlFromFusePath(char *url, const char *fusePath, FuseData *fuseData)
     if (website)
     {
         // lookup from database if it already exists
-        memcpy(url, website->url, strlen(website->url));
+        strcpy(url, website->url);
         freeWebsite(website);
     }
     else
     {
-        int len = strlen(pathCopy);
-
         // copy to url which is returned to user
-        memcpy(url, pathCopy, len);
+        strcpy(url, pathCopy);
     }
 }
 

@@ -214,7 +214,7 @@ void util_urlToFileName(char *filename, const char *inputURL)
     }
 
     assert(startingPoint);
-    memcpy(filename, startingPoint, strlen(startingPoint));
+    strncpy(filename, startingPoint, strlen(startingPoint));
 
     // cleanup
     free(url);
