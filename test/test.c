@@ -308,7 +308,7 @@ void testIsURL()
 {
     // URLs
     assert(util_isURL("google.com"));
-    assert(util_isURL("https://www.google.com"));
+    assert(util_isURL("https://www.example.edu"));
     assert(util_isURL("s3://my-bucket/dir/index.html"));
 
     // Not URLs
@@ -1199,6 +1199,42 @@ void testS3()
     free(contents);
 }
 
+void testPathIsAlsoUrl()
+{
+    // this test uses two different urls with same path (filename)
+    // the current behavior when this is detected is to delete the old one
+    // then download the new one
+    FuseData *fuseData = initFuseData();
+
+    const char url[] = "www.example.com/example.net";
+    const char path[] = "example.net";
+    const char html[] = "<HTML>";
+
+    const char url2[] = "/example.net";
+
+    // create website with path = "example.com"
+    Website *website = initWebsite(url, path, html);
+    insertWebsite(fuseData->db, website);
+    freeWebsite(website);
+
+    // create second website with a different url but same path (example.com)
+    struct stat st = {};
+    int ret = operations_getattr(url2, &st, fuseData);
+    assert(ret == 0);
+
+    size_t size = 4096;
+    char *buffer = calloc(size, 1);
+
+    // verify second url can be read correctly
+    int length = operations_read(url2, buffer, size, 0, fuseData);
+    assert(length == strlen(html));
+    assert(strcmp(buffer, html) == 0);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(buffer);
+}
+
 int main()
 {
     testDownloadURL();
@@ -1246,6 +1282,7 @@ int main()
     testGetPathFromS3();
     testConvertS3intoURL();
     testS3();
+    testPathIsAlsoUrl();
 
     printf("Tests passed!\n");
     return 0;

@@ -39,7 +39,23 @@ mmap
 - mmap does work, uses extra copy
 - offset
 
-word count of .h and .c
+word count of .h and .c:
+$ find . -name '*.[chS]' | xargs wc
+ 1288  3314 32136 ./test/test.c
+   18    26   247 ./src/fuseData.h
+   37   147  1337 ./src/operations.h
+   22    68   572 ./src/linkedList.h
+   21    37   384 ./src/fuseData.c
+   38    79   778 ./src/website.c
+   98   233  1973 ./src/linkedList.c
+   55   152  1320 ./src/fuse-main.c
+   25    63   626 ./src/sqlite.h
+   14    30   240 ./src/website.h
+  249   781  6126 ./src/sqlite.c
+  352  1135  9902 ./src/operations.c
+   28    91   803 ./src/util.h
+  304   882  7525 ./src/util.c
+ 2549  7038 63969 total
 
 
 swapon:

@@ -278,7 +278,7 @@ bool _checkIfSamePathWithDifferentUrl(FuseData *fuseData, Website *website, cons
     // ex: example.com/path and example.net/path
     // these both map to files called "path"
     // this function detects this case and deletes the older one
-    if (website && util_isURL(url) && strcmp(website->url, url) != 0)
+    if (website && util_isURL(url) && strcmp(website->url, url) != 0 && strcmp(website->path, url) != 0)
     {
         // found same path, but different url
         // delete this website to prepare to create a new one
