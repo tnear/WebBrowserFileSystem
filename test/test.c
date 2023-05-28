@@ -17,8 +17,6 @@
 #include <curl/curl.h>
 #include <sys/stat.h>
 
-#define FUSE_PATH_MAX 4096
-
 static bool isFile(const char *filename)
 {
     return access(filename, F_OK) == 0;
@@ -310,10 +308,13 @@ void testIsURL()
 {
     // URLs
     assert(util_isURL("google.com"));
+    assert(util_isURL("https://www.google.com"));
+    assert(util_isURL("s3://my-bucket/dir/index.html"));
 
     // Not URLs
     assert(!util_isURL(".com"));
     assert(!util_isURL("com"));
+    assert(!util_isURL(""));
 }
 
 void testUrlToFileName()
@@ -1093,6 +1094,111 @@ void testMmapOffset()
     free(html);
 }
 
+void testIsS3()
+{
+    {
+        char url[] = "s3://my_url";
+        assert(util_isS3(url));
+    }
+
+    {
+        char url[] = "s3://my_url/index.html";
+        assert(util_isS3(url));
+    }
+
+    {
+        char url[] = "s3:/";
+        assert(!util_isS3(url));
+    }
+
+    {
+        char url[] = "www.example.com";
+        assert(!util_isS3(url));
+    }
+}
+
+void testGetBucketFromS3()
+{
+    {
+        // slash
+        char s3[] = "s3://my-bucket/dir/file.html";
+
+        char bucket[FUSE_PATH_MAX] = {};
+        getBucketFromS3(bucket, s3);
+
+        assert(strcmp(bucket, "my-bucket") == 0);
+    }
+
+    {
+        // no slash
+        char s3[] = "s3://my-bucket";
+
+        char bucket[FUSE_PATH_MAX] = {};
+        getBucketFromS3(bucket, s3);
+
+        assert(strcmp(bucket, "my-bucket") == 0);
+    }
+}
+
+void testGetPathFromS3()
+{
+    {
+        char s3[] = "s3://my-bucket/dir/file.html";
+
+        char path[FUSE_PATH_MAX] = {};
+        getPathFromS3(path, s3);
+
+        assert(strcmp(path, "dir/file.html") == 0);
+    }
+
+    {
+        char s3[] = "s3://my-bucket/dir";
+
+        char path[FUSE_PATH_MAX] = {};
+        getPathFromS3(path, s3);
+
+        assert(strcmp(path, "dir") == 0);
+    }
+}
+
+void testConvertS3intoURL()
+{
+    {
+        char s3[] = "s3://my-bucket/dir/file.html";
+        char url[FUSE_PATH_MAX] = {};
+        
+        convertS3intoURL(url, s3);
+
+        assert(strcmp(url, "https://my-bucket.s3.us-east-2.amazonaws.com/dir/file.html") == 0);
+    }
+}
+
+void testS3()
+{
+    FuseData *fuseData = initFuseData();
+
+    char url[] = "/s3:\\\\new-bucket-travis-near-1\\index.html";
+
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(url, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    // read data using read()
+    char *contents = calloc(4096, 1);
+    int fileLength = operations_read(url, contents, 4096, 0, fuseData);
+    int strLength = strlen(contents);
+
+    // verify length and file contents
+    assert(strstr(contents, "amazing bucket!") != 0);
+    assert(strLength == fileLength);
+
+    // cleanup
+    deleteFuseData(fuseData);
+    free(contents);
+}
+
 int main()
 {
     testDownloadURL();
@@ -1135,6 +1241,11 @@ int main()
     testSizeLimit();
     testMmap();
     testMmapOffset();
+    testIsS3();
+    testGetBucketFromS3();
+    testGetPathFromS3();
+    testConvertS3intoURL();
+    testS3();
 
     printf("Tests passed!\n");
     return 0;

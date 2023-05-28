@@ -16,8 +16,6 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#define FUSE_PATH_MAX 4096
-
 // Returns file attributes
 // For "example.com/a",
 // fusePath will be: "/example.com/a" when typing commands
@@ -38,6 +36,7 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
     Website *website = lookupWebsite(fuseData, fusePath, &curlStatus);
     if (curlStatus != CURLE_OK)
     {
+        assert(!website);
         return curlStatus;
     }
 
@@ -54,17 +53,17 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
 }
 
 // Returns list of child file names
-int operations_readdir(const char *path, void *buf, fill_dir_t filler,
+int operations_readdir(const char *fusePath, void *buf, fill_dir_t filler,
     off_t offset, FuseData *fuseData)
 {
-    if (strcmp(path, "/") != 0)
+    if (strcmp(fusePath, "/") != 0)
     {
         // ignore non-root files
         return 0;
     }
 
     // make every file a direct child of root
-    assert(strcmp(path, "/") == 0);
+    assert(strcmp(fusePath, "/") == 0);
     const off_t zeroOffset = 0;
 
     // fill all websites added this session
@@ -84,7 +83,7 @@ int operations_readdir(const char *path, void *buf, fill_dir_t filler,
 
 // reads website data from database to populate file
 int operations_read(const char *fusePath, char *buf, size_t size,
-    off_t offset, FuseData *fuseData)
+                    off_t offset, FuseData *fuseData)
 {
     // fusePath can be of form: "http:\\\\example.com"
     // use getURL to convert above to: "http://example.com"
@@ -151,32 +150,33 @@ int operations_unlink(const char *fusePath, FuseData *fuseData)
 
 // ex:
 // fusePath: /example.com\\a
-//      url:  example.com/a
+//  =>  url:  example.com/a
+//       s3: /s3:\\\\my-bucket\\index.html
+//  =>  url: https://my-bucket.s3.us-east-2.amazonaws.com/index.html
 void getUrlFromFusePath(char *url, const char *fusePath, FuseData *fuseData)
 {
-    Website *website = lookupWebsiteByUrl(fuseData->db, fusePath + 1);
+    // remove leading slash using +1
+    const char *fusePathNoSlash = fusePath + 1;
+    char pathCopy[FUSE_PATH_MAX] = {};
+    strcpy(pathCopy, fusePathNoSlash);
+
+    // '/' is not allowed in file name, so have user type in '\'. Replace it here:
+    util_replaceChar(pathCopy, '\\', '/');
+
+    Website *website = lookupWebsiteByUrl(fuseData->db, pathCopy);
     if (website)
     {
         // lookup from database if it already exists
         memcpy(url, website->url, strlen(website->url));
         freeWebsite(website);
-        return;
     }
+    else
+    {
+        int len = strlen(pathCopy);
 
-    // remove leading slash using +1
-    char *pathCopy = strdup(fusePath + 1);
-
-    // '/' is not allowed in file name, so have user type in '\'. Replace it here:
-    util_replaceChar(pathCopy, '\\', '/');
-
-    int len = strlen(pathCopy);
-    assert(len <= FUSE_PATH_MAX);
-
-    // copy to url which is returned to user
-    memcpy(url, pathCopy, len);
-
-    // cleanup
-    free(pathCopy);
+        // copy to url which is returned to user
+        memcpy(url, pathCopy, len);
+    }
 }
 
 Website* lookupWebsite(FuseData *fuseData, const char *fusePath, CURLcode *curlStatus)
@@ -224,16 +224,28 @@ Website* lookupWebsite(FuseData *fuseData, const char *fusePath, CURLcode *curlS
 
 Website* downloadWebsite(FuseData *fuseData, const char *url, const char *filename, CURLcode *curlStatus)
 {
-    char *contents = NULL;
-    int contentLength = getUrlContentLength(url);
-    if (contentLength > BYTE_SIZE_CAP)
+    char urlToUse[FUSE_PATH_MAX] = {};
+    if (util_isS3(url))
     {
-        // over limit, return preview data (first 100 bytes)
-        contents = _getPreviewData(filename, url);
+        // s3 urls require a translation
+        convertS3intoURL(urlToUse, url);
     }
     else
     {
-        *curlStatus = util_downloadURL(url, filename);
+        // non-s3 urls do not
+        strcpy(urlToUse, url);
+    }
+
+    char *contents = NULL;
+    int contentLength = getUrlContentLength(urlToUse);
+    if (contentLength > BYTE_SIZE_CAP)
+    {
+        // over limit, return preview data (first 100 bytes)
+        contents = _getPreviewData(filename, urlToUse);
+    }
+    else
+    {
+        *curlStatus = util_downloadURL(urlToUse, filename);
         if (*curlStatus != CURLE_OK)
         {
             // cannot download, return curl error

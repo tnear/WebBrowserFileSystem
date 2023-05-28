@@ -31,12 +31,22 @@ Challenges:
 - slash character
 - trying to save inside mounted directory
 - file attributes (permissions, name, timestamp)
-- memory leaks
+- memory leaks (C++ has smart pointers which can wrap C apis, RAII)
 
 mmap
 - no native support, though still functional
 - fuse has its own buffer
 - mmap does work, uses extra copy
 - offset
+
+word count of .h and .c
+
+
+swapon:
+FUSE allows you to create a custom filesystem that operates in user space, providing a way to implement file system behaviors using user-level code. It allows you to create virtual filesystems that can be mounted and accessed like regular filesystems.
+
+On the other hand, swapon is a command used to activate swap space in Linux. Swap space is a dedicated partition or file used as virtual memory extension when the system's physical memory (RAM) is fully utilized. It is managed by the kernel and used for swapping out inactive memory pages.
+
+FUSE and swapon serve different purposes and operate at different levels of the system. FUSE is focused on implementing custom filesystems with user-level code, while swapon is used for managing swap space at the kernel level.
 
 ---
