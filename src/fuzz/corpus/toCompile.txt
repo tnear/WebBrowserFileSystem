@@ -1,0 +1,5 @@
+# Compile:
+$ clang -fsanitize=fuzzer fuzzTarget.c -o fuzzTarget
+
+# Run:
+$ ./fuzzTarget -max_len=256 corpus

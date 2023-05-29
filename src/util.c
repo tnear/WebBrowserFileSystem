@@ -284,7 +284,8 @@ void getPathFromS3(char *path, const char *s3)
     pathStart += strlen(bucket); // consume bucket
     pathStart += 1; // consume slash
 
-    strcpy(path, pathStart);
+    // copy remaining characters after "bucket/" (if any)
+    strncpy(path, pathStart, strlen(s3) - (pathStart - s3) + 1);
 }
 
 // ex: convert: "s3://bucket/file.html"

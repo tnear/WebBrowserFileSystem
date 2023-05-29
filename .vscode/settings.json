@@ -17,6 +17,7 @@
         "type_traits": "c",
         "atomic": "c",
         "cstdio": "c",
-        "curl.h": "c"
+        "curl.h": "c",
+        "stdint-uintn.h": "c"
     }
 }

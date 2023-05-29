@@ -12,3 +12,6 @@ src/mnt/*
 
 # Database file
 src/websites.db
+
+# Fuzz testing
+src/fuzz/fuzzTarget

@@ -1170,14 +1170,12 @@ void testGetPathFromS3()
 
 void testConvertS3intoURL()
 {
-    {
-        char s3[] = "s3://my-bucket/dir/file.html";
-        char url[FUSE_PATH_MAX] = {};
-        
-        convertS3intoURL(url, s3);
+    char s3[] = "s3://my-bucket/dir/file.html";
+    char url[FUSE_PATH_MAX] = {};
+    
+    convertS3intoURL(url, s3);
 
-        assert(strcmp(url, "https://my-bucket.s3.us-east-2.amazonaws.com/dir/file.html") == 0);
-    }
+    assert(strcmp(url, "https://my-bucket.s3.us-east-2.amazonaws.com/dir/file.html") == 0);
 }
 
 void testS3()
@@ -1261,6 +1259,16 @@ void testFileAndGroupOwner()
     deleteFuseData(fuseData);
 }
 
+void testS3fuzz()
+{
+    char s3[] = "s3://ample[\\\\.com";
+    char url[FUSE_PATH_MAX] = {};
+
+    convertS3intoURL(url, s3);
+    printf("%s\n", url);
+    assert(strcmp(url, "https://ample[\\\\.com.s3.us-east-2.amazonaws.com/") == 0);
+}
+
 int main()
 {
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -1311,6 +1319,7 @@ int main()
     testS3();
     testPathIsAlsoUrl();
     testFileAndGroupOwner();
+    testS3fuzz();
 
     curl_global_cleanup();
     printf("Tests passed!\n");
