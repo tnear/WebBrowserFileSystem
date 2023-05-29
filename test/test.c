@@ -89,7 +89,8 @@ void testLinkedList()
     assert(strcmp(helloNode->url, "Hello.html") == 0);
     llInsertNode(&head, "World",  "World.html");
     llInsertNode(&head, "Linked", "Linked.html");
-    llInsertNode(&head, "List",   "List.html");
+    // non-duplicate insert
+    llInsertNodeIfDoesntExist(&head, "List", "List.html");
 
     assert(llContainsString(head, "Hello"));
     assert(!llContainsString(head, "fake_string"));
@@ -434,6 +435,10 @@ void testCreateDatabase()
     // fake url (returns NULL)
     Website *fake = lookupWebsiteByUrl(db, "fake_url");
     assert(!fake);
+
+    // duplicate create, this deletes file and creates anew
+    db = createDatabase();
+    assert(db);
 
     // cleanup
     closeDatabase(db);

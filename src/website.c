@@ -1,4 +1,5 @@
 #include "website.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,9 +30,7 @@ Website* initWebsite(const char *url, const char *path, const char *html, time_t
 
 void freeWebsite(Website *website)
 {
-    if (!website)
-        return;
-
+    assert(website);
     free(website->url);
     free(website->path);
     free(website->html);
