@@ -1235,6 +1235,25 @@ void testPathIsAlsoUrl()
     free(buffer);
 }
 
+void testFileAndGroupOwner()
+{
+    FuseData *fuseData = initFuseData();
+
+    char url[] = "/example.com";
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(url, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    // verify owner and group
+    assert(getuid() == st.st_uid);
+    assert(getgid() == st.st_gid);
+
+    // cleanup
+    deleteFuseData(fuseData);
+}
+
 int main()
 {
     testDownloadURL();
@@ -1283,6 +1302,7 @@ int main()
     testConvertS3intoURL();
     testS3();
     testPathIsAlsoUrl();
+    testFileAndGroupOwner();
 
     printf("Tests passed!\n");
     return 0;

@@ -44,6 +44,9 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
     stbuf->st_mode = regular_file.st_mode;
     // set timestamp from database
     stbuf->st_mtime = website->time;
+    // set owner and group id
+    stbuf->st_uid = getuid();
+    stbuf->st_gid = getgid();
 
     // cleanup
     freeWebsite(website);
