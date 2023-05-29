@@ -223,7 +223,7 @@ void util_urlToFileName(char *filename, const char *inputURL)
 void util_replaceChar(char *str, char orig, char rep)
 {
     char *ptr = str;
-    while (ptr = strchr(ptr, orig))
+    while ((ptr = strchr(ptr, orig)))
     {
         *ptr++ = rep;
     }

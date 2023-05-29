@@ -101,8 +101,8 @@ Website* lookupWebsiteByUrl(sqlite3 *db, const char *url)
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
         ++count;
-        const char *path = sqlite3_column_text(stmt, 0);
-        const char *html = sqlite3_column_text(stmt, 1);
+        const char *path = (const char*) sqlite3_column_text(stmt, 0);
+        const char *html = (const char*) sqlite3_column_text(stmt, 1);
         time_t time = sqlite3_column_int(stmt, 2);
 
         website = initWebsite(url, path, html, time);
@@ -136,8 +136,8 @@ Website *lookupWebsiteByFilename(sqlite3 *db, const char *filename)
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
         ++count;
-        const char *url = sqlite3_column_text(stmt, 0);
-        const char *html = sqlite3_column_text(stmt, 1);
+        const char *url  = (const char*) sqlite3_column_text(stmt, 0);
+        const char *html = (const char*) sqlite3_column_text(stmt, 1);
         time_t time = sqlite3_column_int(stmt, 2);
 
         website = initWebsite(url, filename, html, time);
@@ -245,7 +245,7 @@ Node* getFileNames(sqlite3 *db)
 
     while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
     {
-        const char *tempPath = sqlite3_column_text(stmt, 0);
+        const char *tempPath = (const char *) sqlite3_column_text(stmt, 0);
         char url[] = ""; // not needed for file names
         llInsertNode(&llHead, tempPath, url);
     }

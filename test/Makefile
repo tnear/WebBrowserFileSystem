@@ -1,4 +1,5 @@
-CC = gcc
+#CC = gcc
+CC = clang
 CFLAGS = -g
 LDFLAGS = -lcurl -lsqlite3
 
@@ -18,7 +19,7 @@ test: $(OBJS)
 
 # Build C-files with the same flags
 %.o: %.c
-	$(CC) -c $< $(CFLAGS) $(LDFLAGS) -o $@
+	$(CC) -c $< $(CFLAGS) -o $@
 
 .PHONY: clean
 clean:

@@ -1,4 +1,5 @@
-CC = gcc
+#CC = gcc
+CC = clang
 CFLAGS = -g
 # lcurl needed for curl, `...fuse` needed for fuse
 LDFLAGS = -lcurl `pkg-config --libs --cflags fuse` -lsqlite3
@@ -17,7 +18,7 @@ fuse-main: $(OBJS)
 
 # Build C-files with the same flags
 %.o: %.c
-	$(CC) -c $< $(CFLAGS) $(LDFLAGS) -o $@
+	$(CC) -c $< $(CFLAGS) -D_FILE_OFFSET_BITS=64 -o $@
 
 .PHONY: clean
 clean:

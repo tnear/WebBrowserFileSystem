@@ -167,6 +167,7 @@ int g_testFillerCallCount = 0;
 int testFiller(void *buf, const char *name, const struct stat *stbuf, off_t off)
 {
     ++g_testFillerCallCount;
+    return 0;
 }
 
 void testReadDirRoot()
