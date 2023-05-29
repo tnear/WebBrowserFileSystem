@@ -14,4 +14,4 @@ src/mnt/*
 src/websites.db
 
 # Fuzz testing
-src/fuzz/fuzzTarget
+test/fuzz/fuzzTarget
