@@ -51,19 +51,18 @@ CURLcode util_downloadURL(const char *url, const char *filename)
     // perform the download
     CURLcode res = curl_easy_perform(curl);
 
+    // close file handle
+    fclose(file);
+
     // check for errors
     if (res != CURLE_OK)
     {
         // Delete file for failed downloads
         remove(filename);
-        return res;
     }
 
     // cleanup curl
     curl_easy_cleanup(curl);
-
-    // close file handle
-    fclose(file);
 
     return res;
 }

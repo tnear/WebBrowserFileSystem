@@ -102,6 +102,7 @@ void testLinkedList()
     llInsertNodeIfDoesntExist(&head, "Hello", "Hello.html");
     assert(llGetLength(head) == 4);
 
+    Node *front = head;
     assert(strcmp(head->filename, "Hello") == 0);
     head = head->next;
     assert(strcmp(head->filename, "World") == 0);
@@ -112,7 +113,9 @@ void testLinkedList()
     head = head->next;
     assert(!head);
 
+    // cleanup
     llFreeList(head);
+    llFreeList(front);
 }
 
 void testGetAttrURL()
@@ -436,10 +439,6 @@ void testCreateDatabase()
     Website *fake = lookupWebsiteByUrl(db, "fake_url");
     assert(!fake);
 
-    // duplicate create, this deletes file and creates anew
-    db = createDatabase();
-    assert(db);
-
     // cleanup
     closeDatabase(db);
     freeWebsite(website);
@@ -692,6 +691,7 @@ void testReadSize()
     // allocate twice as many '$' chars as size
     char *htmlData = calloc(size * 2, 1);
     memset(htmlData, '$',   size * 2);
+    htmlData[size * 2 - 1] = '\0'; // null terminate
 
     // add website to database
     FuseData *fuseData = initFuseData();
@@ -1097,6 +1097,7 @@ void testMmapOffset()
     free(contents);
     remove(tmpFile);
     free(html);
+    fclose(fp);
 }
 
 void testIsS3()
@@ -1261,6 +1262,7 @@ void testFileAndGroupOwner()
 
 int main()
 {
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     testDownloadURL();
     testInvalidURL();
     testReadEntireFile();
@@ -1309,6 +1311,7 @@ int main()
     testPathIsAlsoUrl();
     testFileAndGroupOwner();
 
+    curl_global_cleanup();
     printf("Tests passed!\n");
     return 0;
 }

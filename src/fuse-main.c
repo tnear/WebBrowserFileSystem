@@ -44,10 +44,13 @@ struct fuse_operations urlfsOperations =
 
 int main(int argc, char* argv[])
 {
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
     g_fuseData = initFuseData();
     int ret = fuse_main(argc, argv, &urlfsOperations, NULL);
 
     // cleanup
+    curl_global_cleanup();
     printf("\n\nfuse-main exiting...\n");
     deleteFuseData(g_fuseData);
 

@@ -19,11 +19,8 @@ static bool isFile(const char *filename)
 
 sqlite3* createDatabase()
 {
-    if (isFile(DB_FILENAME))
-    {
-        // delete old db file
-        remove(DB_FILENAME);
-    }
+    // remove existing
+    remove(DB_FILENAME);
 
     sqlite3 *db = NULL;
 
@@ -39,6 +36,7 @@ sqlite3* createDatabase()
 
 void closeDatabase(sqlite3 *db)
 {
+    assert(isFile(DB_FILENAME));
     sqlite3_close(db);
 
     // delete database file

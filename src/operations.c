@@ -343,6 +343,7 @@ char* _getStringStartingPoint(FuseData *fuseData, Website *website, struct stat 
         assert(strlen(stringStartingPoint) == statbuf->st_size - offset);
 
         remove(mmapPath);
+        fclose(fp);
     }
     else
     {
