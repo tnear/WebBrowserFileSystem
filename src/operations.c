@@ -42,8 +42,8 @@ int operations_getattr(const char *fusePath, struct stat *stbuf, FuseData *fuseD
 
     stbuf->st_size = website->htmlLen;
     stbuf->st_mode = regular_file.st_mode;
-    // set timestamp to current time
-    stbuf->st_mtime = time(NULL);
+    // set timestamp from database
+    stbuf->st_mtime = website->time;
 
     // cleanup
     freeWebsite(website);
@@ -256,8 +256,11 @@ Website* downloadWebsite(FuseData *fuseData, const char *url, const char *filena
     assert(contents);
     printf("Downloaded: %s\n", url);
 
+    // get current time
+    time_t currentTime = time(NULL);
+
     // add to database
-    Website *website = initWebsite(url, filename, contents);
+    Website *website = initWebsite(url, filename, contents, currentTime);
     insertWebsite(fuseData->db, website);
 
     // remove temp file

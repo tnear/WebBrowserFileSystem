@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-Website* initWebsite(const char *url, const char *path, const char *html)
+Website* initWebsite(const char *url, const char *path, const char *html, time_t time)
 {
     Website *website = malloc(sizeof(Website));
 
@@ -22,6 +22,7 @@ Website* initWebsite(const char *url, const char *path, const char *html)
     strcpy(website->html, html);
 
     website->htmlLen = len;
+    website->time = time;
 
     return website;
 }

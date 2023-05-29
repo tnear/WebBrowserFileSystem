@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 // Website table for storing url, path, and html data
@@ -47,9 +48,10 @@ void closeDatabase(sqlite3 *db)
 int _createWebsiteTable(sqlite3 *db)
 {
     const char* createTableQuery = "create table if not exists " WEBSITE " ("\
-        "URL   text primary key," \
-        "PATH  text not null," \
-        "HTML  text not null);";
+        "URL  text primary key," \
+        "PATH text not null,"    \
+        "HTML text not null, "   \
+        "TIME text not null);";
 
     int rc = sqlite3_exec(db, createTableQuery, 0, 0, NULL);
     assert(rc == SQLITE_OK);
@@ -58,16 +60,20 @@ int _createWebsiteTable(sqlite3 *db)
 
 int insertWebsite(sqlite3 *db, Website *website)
 {
-    const char *insertQuery = "insert into " WEBSITE " (URL, PATH, HTML) values (?, ?, ?);";
+    const char *insertQuery = "insert into " WEBSITE " (URL, PATH, HTML, TIME) values (?, ?, ?, ?);";
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, insertQuery, -1, &stmt, 0);
     assert(rc == SQLITE_OK);
+
+    // get current time
+    time_t currentTime = time(NULL);
 
     // Bind values to the prepared statement
     int idx = 1;
     sqlite3_bind_text(stmt, idx++, website->url,  -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, idx++, website->path, -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, idx++, website->html, -1, SQLITE_STATIC);
+    sqlite3_bind_int (stmt, idx++, currentTime);
 
     // Execute the prepared statement
     rc = sqlite3_step(stmt);
@@ -83,7 +89,7 @@ int insertWebsite(sqlite3 *db, Website *website)
 Website* lookupWebsiteByUrl(sqlite3 *db, const char *url)
 {
     Website *website = NULL;
-    const char sql[] = "select PATH,HTML from " WEBSITE " where URL = ?;";
+    const char sql[] = "select PATH,HTML,TIME from " WEBSITE " where URL = ?;";
 
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
@@ -99,8 +105,9 @@ Website* lookupWebsiteByUrl(sqlite3 *db, const char *url)
         ++count;
         const char *path = sqlite3_column_text(stmt, 0);
         const char *html = sqlite3_column_text(stmt, 1);
+        time_t time = sqlite3_column_int(stmt, 2);
 
-        website = initWebsite(url, path, html);
+        website = initWebsite(url, path, html, time);
     }
 
     assert(rc == SQLITE_DONE);
@@ -117,7 +124,7 @@ Website* lookupWebsiteByUrl(sqlite3 *db, const char *url)
 Website *lookupWebsiteByFilename(sqlite3 *db, const char *filename)
 {
     Website *website = NULL;
-    const char sql[] = "select URL,HTML from " WEBSITE " where PATH = ?;";
+    const char sql[] = "select URL,HTML,TIME from " WEBSITE " where PATH = ?;";
 
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
@@ -133,8 +140,9 @@ Website *lookupWebsiteByFilename(sqlite3 *db, const char *filename)
         ++count;
         const char *url = sqlite3_column_text(stmt, 0);
         const char *html = sqlite3_column_text(stmt, 1);
+        time_t time = sqlite3_column_int(stmt, 2);
 
-        website = initWebsite(url, filename, html);
+        website = initWebsite(url, filename, html, time);
     }
 
     assert(rc == SQLITE_DONE);

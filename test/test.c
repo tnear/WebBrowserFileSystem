@@ -140,7 +140,7 @@ void testGetAttrURL()
     // verify timestamp
     time_t currentTime = time(NULL);
     assert(st.st_mtime > 0);
-    assert(currentTime - st.st_mtime <= 5);
+    assert(currentTime - st.st_mtime <= 1);
 
     deleteFuseData(fuseData);
 }
@@ -180,12 +180,12 @@ void testReadDirRoot()
     char url2[] = "file2.txt";
 
     // website 1
-    Website *website = initWebsite(url1, url1, url1);
+    Website *website = initWebsite(url1, url1, url1, time(NULL));
     insertWebsite(fuseData->db, website);
     freeWebsite(website);
 
     // website 2
-    website = initWebsite(url2, url2, url2);
+    website = initWebsite(url2, url2, url2, time(NULL));
     insertWebsite(fuseData->db, website);
 
     int ret = operations_readdir(filename, buf, testFiller, offset, fuseData);
@@ -237,7 +237,7 @@ void testRead()
 
     // init linked list with www.example.com
     FuseData *fuseData = initFuseData();
-    Website *website = initWebsite(filenameNoSlash, filenameNoSlash, htmlData);
+    Website *website = initWebsite(filenameNoSlash, filenameNoSlash, htmlData, time(NULL));
     insertWebsite(fuseData->db, website);
 
     // read file, return length
@@ -281,7 +281,7 @@ void testReadBackslash()
     char *htmlData = util_readEntireFile(filename);
 
     // add to database
-    Website *website = initWebsite(urlNoSlash, filename, htmlData);
+    Website *website = initWebsite(urlNoSlash, filename, htmlData, time(NULL));
     insertWebsite(fuseData->db, website);
 
     // read file, return length
@@ -403,7 +403,7 @@ void testWebsite()
     char path[] = "example";
     char html[] = "<HTML>";
 
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
 
     assert(strcmp(website->url, url) == 0);
     assert(strcmp(website->path, path) == 0);
@@ -420,7 +420,7 @@ void testCreateDatabase()
     const char path[] = "example";
     const char html[] = "<HTML></HTML>";
 
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
 
     int ret = insertWebsite(db, website);
     assert(ret == SQLITE_OK);
@@ -452,7 +452,7 @@ void testLookupURL()
     // lookup before inserting
     assert(!lookupURL(db, url));
 
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
     insertWebsite(db, website);
 
     // lookup after inserting
@@ -482,7 +482,7 @@ void testGetFileNames()
         const char path[] = "example";
         const char html[] = "<HTML></HTML>";
 
-        Website *website = initWebsite(url, path1, html);
+        Website *website = initWebsite(url, path1, html, time(NULL));
         insertWebsite(db, website);
         freeWebsite(website);
     }
@@ -491,7 +491,7 @@ void testGetFileNames()
         const char url[] = "www.example.com2";
         const char html[] = "<HTML></HTML>2";
 
-        Website *website = initWebsite(url, path2, html);
+        Website *website = initWebsite(url, path2, html, time(NULL));
         insertWebsite(db, website);
         freeWebsite(website);
     }
@@ -526,7 +526,7 @@ void testLookupByFilename()
     Website *fake = lookupWebsiteByFilename(db, "fake_filename");
     assert(!fake);
 
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
     insertWebsite(db, website);
 
     // lookup existing website and verify contents
@@ -553,7 +553,7 @@ void testGetAttrOnPath()
     char *fusePath = "/my_path";
     char *fusePathNoSlash = fusePath + 1;
     char html[] = "data here...";
-    Website *website = initWebsite("example.com/my_path", fusePathNoSlash, html);
+    Website *website = initWebsite("example.com/my_path", fusePathNoSlash, html, time(NULL));
     insertWebsite(fuseData->db, website);
 
     struct stat st = {};
@@ -591,7 +591,7 @@ void testReadOnPath()
 
     // add website to database
     FuseData *fuseData = initFuseData();
-    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData);
+    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData, time(NULL));
     insertWebsite(fuseData->db, website);
 
     // read file, verify data
@@ -690,7 +690,7 @@ void testReadSize()
 
     // add website to database
     FuseData *fuseData = initFuseData();
-    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData);
+    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData, time(NULL));
     insertWebsite(fuseData->db, website);
 
     // read file, verify data
@@ -720,7 +720,7 @@ void testReadOffset()
 
     // add website to database
     FuseData *fuseData = initFuseData();
-    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData);
+    Website *website = initWebsite(filenameNoSlash, pathNoSlash, htmlData, time(NULL));
     insertWebsite(fuseData->db, website);
 
     // using size = 3 and offset = 4 should return characters "efg"
@@ -742,7 +742,7 @@ void testDeleteURL()
     const char path[] = "example";
     const char html[] = "<HTML></HTML>";
 
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
     insertWebsite(db, website);
 
     // lookup url
@@ -790,7 +790,7 @@ void testDuplicatePath()
     const char url2[] = "/www.example.net/my_path";
 
     // create website with path = "my_path"
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
     insertWebsite(fuseData->db, website);
     freeWebsite(website);
 
@@ -837,7 +837,7 @@ void testUnlink()
     const char html[] = "<HTML></HTML>";
 
     // create website
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
     insertWebsite(fuseData->db, website);
     freeWebsite(website);
 
@@ -869,7 +869,7 @@ void testUnlinkPath()
     const char *path = fusePath + 1;
 
     // create website
-    Website *website = initWebsite(url, path, "");
+    Website *website = initWebsite(url, path, "", time(NULL));
     insertWebsite(fuseData->db, website);
     freeWebsite(website);
 
@@ -1073,7 +1073,7 @@ void testMmapOffset()
     char *html = util_readEntireFile(tmpFile);
 
     // create website
-    Website *website = initWebsite(url + 1, url + 1, html);
+    Website *website = initWebsite(url + 1, url + 1, html, time(NULL));
     insertWebsite(fuseData->db, website);
     freeWebsite(website);
 
@@ -1213,7 +1213,7 @@ void testPathIsAlsoUrl()
     const char url2[] = "/example.net";
 
     // create website with path = "example.com"
-    Website *website = initWebsite(url, path, html);
+    Website *website = initWebsite(url, path, html, time(NULL));
     insertWebsite(fuseData->db, website);
     freeWebsite(website);
 
