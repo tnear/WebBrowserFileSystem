@@ -1057,7 +1057,7 @@ static FILE* createFile(const char *filename, struct stat *statbuf)
     fgets(buf, 5000, fp);
 
     int fd = fileno(fp);
-    
+
     int err = fstat(fd, statbuf);
     assert(err == 0);
 
@@ -1174,7 +1174,7 @@ void testConvertS3intoURL()
 {
     char s3[] = "s3://my-bucket/dir/file.html";
     char url[FUSE_PATH_MAX] = {};
-    
+
     convertS3intoURL(url, s3);
 
     assert(strcmp(url, "https://my-bucket.s3.us-east-2.amazonaws.com/dir/file.html") == 0);
