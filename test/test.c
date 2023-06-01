@@ -996,10 +996,12 @@ void testSizeLimit()
     int fileLength = operations_read(fusePath, contents, 2 * BYTE_SIZE_PREVIEW, 0, fuseData);
     int strLength = strlen(contents);
 
+    /* no longer previewing
     // verify length and file contents
     assert(strLength == BYTE_SIZE_PREVIEW);
-    char expString[] = "/*! jQuery";
+    char expString[] = "/<star>! jQuery";
     assert(strncmp(contents, expString, strlen(expString)) == 0);
+    */
 
     // cleanup
     deleteFuseData(fuseData);
@@ -1269,6 +1271,65 @@ void testS3fuzz()
     assert(strcmp(url, "https://ample[\\\\.com.s3.us-east-2.amazonaws.com/") == 0);
 }
 
+void testPaging()
+{
+    FuseData *fuseData = initFuseData();
+
+    char fusePath[] = "/https://code.jquery.com/jquery-3.5.0.min.js";
+
+    struct stat st = {};
+
+    // download data using getattr
+    int ret = operations_getattr(fusePath, &st, fuseData);
+    assert(ret == CURLE_OK);
+
+    {
+        // create input file
+        char filename[] = "myInput.txt";
+        FILE *fp = fopen(filename, "w");
+        char data[] = "1000000";
+        fputs(data, fp);
+        fclose(fp);
+
+        // redirect stdin to this testing file
+        freopen(filename, "r", stdin);
+
+        // get all bytes
+        const int size = 100000;
+        char *contents = calloc(size, 1);
+        int fileLength = operations_read(fusePath, contents, size, 0, fuseData);
+        int strLength = strlen(contents);
+        assert(fileLength == strLength);
+        assert(strLength > 80000 && strLength < 99000);
+        remove(filename);
+        free(contents);
+    }
+
+    {
+        // get 5 bytes
+        char filename[] = "myInput2.txt";
+        FILE *fp = fopen(filename, "w");
+        char data[] = "5";
+        fputs(data, fp);
+        fclose(fp);
+
+        // redirect stdin to this testing file
+        freopen(filename, "r", stdin);
+
+        const int size = 100000;
+        char *contents = calloc(size, 1);
+        int fileLength = operations_read(fusePath, contents, size, 0, fuseData);
+        int strLength = strlen(contents);
+        assert(fileLength == strLength);
+        assert(strLength == 5);
+        remove(filename);
+        free(contents);
+    }
+
+    // cleanup
+    deleteFuseData(fuseData);
+}
+
 int main()
 {
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -1320,8 +1381,9 @@ int main()
     testPathIsAlsoUrl();
     testFileAndGroupOwner();
     testS3fuzz();
+    testPaging();
 
     curl_global_cleanup();
-    printf("Tests passed!\n");
+    printf("\nTests passed!\n");
     return 0;
 }

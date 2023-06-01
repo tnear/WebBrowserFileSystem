@@ -109,14 +109,35 @@ int operations_read(const char *fusePath, char *buf, size_t size,
 
     struct stat statbuf = {};
 
+    if (offset != 0)
+    {
+        printf("Offset: %lu\n", offset);
+    }
+
+    size_t bytesToKeep = size;
+    if (size > BYTE_SIZE_CAP && offset == 0)
+    {
+        // trying to dump entire file, prompt user how many bytes they want and 
+        // recommend to use a paging tool such as less/more instead
+        printf("This URL has a large content length (%lu).\n", size);
+        printf("Using a paging command such as 'more' or 'less' is preferred.\n");
+        printf("How many of these bytes do you want? [1-%lu] (0 to exit): ", size);
+        scanf("%lu", &bytesToKeep);
+        if (bytesToKeep > size)
+        {
+            printf("Getting all bytes...\n");
+            bytesToKeep = size;
+        }
+    }
+
     // get data starting point using either sqlite or mmap
     char *stringStartingPoint = _getStringStartingPoint(fuseData, website, &statbuf, offset);
     
     // copy to buffer up to 'size' starting at 'offset'
-    strncpy(buf, stringStartingPoint, size);
+    strncpy(buf, stringStartingPoint, bytesToKeep);
 
     // return length written
-    int len = strnlen(stringStartingPoint, size);
+    int len = strnlen(stringStartingPoint, bytesToKeep);
 
     // free memory
     freeWebsite(website);
@@ -236,25 +257,15 @@ Website* downloadWebsite(FuseData *fuseData, const char *url, const char *filena
         strcpy(urlToUse, url);
     }
 
-    char *contents = NULL;
-    int contentLength = getUrlContentLength(urlToUse);
-    if (contentLength > BYTE_SIZE_CAP)
+    *curlStatus = util_downloadURL(urlToUse, filename);
+    if (*curlStatus != CURLE_OK)
     {
-        // over limit, return preview data (first 100 bytes)
-        contents = _getPreviewData(filename, urlToUse);
+        // cannot download, return curl error
+        return NULL;
     }
-    else
-    {
-        *curlStatus = util_downloadURL(urlToUse, filename);
-        if (*curlStatus != CURLE_OK)
-        {
-            // cannot download, return curl error
-            return NULL;
-        }
 
-        // read into buffer
-        contents = util_readEntireFile(filename);
-    }
+    // read into buffer
+    char *contents = util_readEntireFile(filename);
 
     assert(contents);
     printf("Downloaded: %s\n", url);
