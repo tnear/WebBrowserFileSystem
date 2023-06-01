@@ -1,6 +1,6 @@
 # Object files
 src/*.o
-src/fuse-main
+src/WebBrowserFileSystem
 test/*.o
 test/test
 

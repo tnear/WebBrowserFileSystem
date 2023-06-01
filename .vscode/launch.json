@@ -8,7 +8,7 @@
             "name": "FUSE (gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/fuse-main",
+            "program": "${fileDirname}/WebBrowserFileSystem",
             "args": [
                 "-s", // single-threaded (aids gdb)
                 "-f", // run in foreground (required for printf statements)

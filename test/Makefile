@@ -1,5 +1,5 @@
-#CC = gcc
-CC = clang
+CC = gcc
+#CC = clang
 CFLAGS = -g
 LDFLAGS = -lcurl -lsqlite3
 

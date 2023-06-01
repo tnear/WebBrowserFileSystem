@@ -51,7 +51,8 @@ int main(int argc, char* argv[])
 
     // cleanup
     curl_global_cleanup();
-    printf("\n\nfuse-main exiting...\n");
+    printf("\n\n");
+    printf("WebBrowserFileSystem exiting...\n");
     deleteFuseData(g_fuseData);
 
     return ret;
