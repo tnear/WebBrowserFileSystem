@@ -2,7 +2,7 @@
 WebBrowserFileSystem (todo)
 
 ## Supported protocols
-* HTTP/S
+* HTTP/HTTPS
 * FTP
 * DICT
 * Amazon S3 buckets (public)
@@ -50,17 +50,30 @@ $ ./fuse-main.o -s -f mnt/
 
 # open separate terminal/screen, then change to the mounted directory
 $ cd src/mnt
-# 
+# WebBrowserFileSystem is now ready to accept network commands (see section below)
 ```
 
-## Downloading files
+## Usage (Downloading files)
+WebBrowserFileSystem allows core unix utilities to make network requests and downloading content. Common examples include `cat`, `vi`, `head`, `less`, and `more`! 
+
+Examples. Ensure that:
+- WebBrowserFileSystem is running in a separate terminal
+- Your present working directory is the mounted directory (`mnt`) in the example above.
 ```bash
-# HTTP
-$ cat example.com
+# HTTP/HTTPS:
+$ head -n1 example.com                              
+<!doctype html>
 
+# s3 bucket (the slash character must be replaced with backslash):
+$ cat s3:\\\\my-bucket\\index.html
+<html><body><h1>hello, world!</h1></body><html>
+
+# FTP
+$ vi ftp:\\\\ftp.slackware.com\\welcome.msg
 
 ```
-
+- Note1: all of the commands above (`head`, `cat`, `vi`) can be used with any supported network protocol.
+- Note2: the `'/'` character is not permitted in UNIX file names. Instead, use backslash (`'\'`) which must be escaped (`'\\'`).
 
 
 
