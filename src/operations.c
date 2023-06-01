@@ -304,10 +304,13 @@ bool _checkIfSamePathWithDifferentUrl(FuseData *fuseData, Website *website, cons
     return false;
 }
 
-char* _getPreviewData(const char *filename, const char *url)
+char* _getPreviewData(const char *filename, const char *url, int contentLength)
 {
     // hit limit
-    printf("URL '%s' is over size limit, downloading 100-byte preview instead...\n", url);
+    int limit = BYTE_SIZE_CAP;
+    printf("URL '%s' has Content-Length=%d bytes which is over the %d-byte limit.\n",
+           url, contentLength, limit);
+    printf("Downloading 100-byte preview instead...\n");
 
     // download first 100 bytes
     char *contents = calloc(BYTE_SIZE_PREVIEW + 1, 1);
