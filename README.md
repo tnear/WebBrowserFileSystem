@@ -1,11 +1,13 @@
 # WebBrowserFileSystem
-WebBrowserFileSystem (todo)
+Can your file system be treated as a web browser? This WebBrowserFileSystem repository enables using UNIX's core utilities such as `cat`, `ls`, and `vi` to make network requests to download content from the Internet.
+
+One challenge of working with Linux's command line interface is that its interface for network data differs greatly from viewing local files. For local files, one uses commands such as `cat`, `ls`, and `less`. For web content, one uses `wget` or `curl`. For s3 data, one uses Amazon's SDK. Instead of learning multiple command line interfaces, WebBrowserFileSystem uses unifies all of them: downloading data works the same way as interfacing with local files. WebBrowserFileSystem utilizes [FUSE](https://github.com/libfuse/libfuse) to intercept system calls to make network requests. This provides a seamless experience for users who not need to concern themselves with the type of data they are viewing.
 
 ## Supported protocols
 * HTTP/HTTPS
 * FTP
-* DICT
 * Amazon S3 buckets (public)
+* DICT
 
 ## Installation
 ```bash
@@ -32,7 +34,7 @@ $ sudo apt install libcurl4-openssl-dev
 $ cd src
 $ make
 
-# Build and run tests (optional)
+# (optional) Build and run tests
 $ cd test
 $ make
 $ ./test
@@ -46,55 +48,37 @@ $ mkdir -p mnt
 # start WebBrowserFileSystem executable using 'mnt' as the special directory
 # (-f = run in foreground, required for print statements)
 # (-s = single-threaded, aids debugging)
-$ ./fuse-main.o -s -f mnt/
+$ ./WebBrowserFileSystem -s -f mnt/
 
-# open separate terminal/screen, then change to the mounted directory
+# Lastly, open a new terminal/screen then change to your mounted directory
 $ cd src/mnt
-# WebBrowserFileSystem is now ready to accept network commands (see section below)
+# WebBrowserFileSystem is now ready to accept network commands! (see section below)
 ```
 
-## Usage (Downloading files)
-WebBrowserFileSystem allows core unix utilities to make network requests and downloading content. Common examples include `cat`, `vi`, `head`, `less`, and `more`! 
+## Using WebBrowserFileSystem to download files
+WebBrowserFileSystem allows using core unix utilities to make network requests and downloading content. Supported commands include `cat`, `vi`, `head`, `less`, and `more`! 
 
-Examples. Ensure that:
+Ensure that:
 - WebBrowserFileSystem is running in a separate terminal
-- Your present working directory is the mounted directory (`mnt`) in the example above.
+- Your present working directory is the mounted directory (`mnt` in the example above)
+
+Examples:
 ```bash
-# HTTP/HTTPS:
+# HTTP/HTTPS using 'head':
 $ head -n1 example.com                              
 <!doctype html>
 
-# s3 bucket (the slash character must be replaced with backslash):
+# s3 bucket (the slash character must be replaced with backslash) using 'cat':
 $ cat s3:\\\\my-bucket\\index.html
-<html><body><h1>hello, world!</h1></body><html>
+<html><body><h1>hello, world</h1></body><html>
 
-# FTP
+# FTP using 'vi':
 $ vi ftp:\\\\ftp.slackware.com\\welcome.msg
-
 ```
-- Note1: all of the commands above (`head`, `cat`, `vi`) can be used with any supported network protocol.
-- Note2: the `'/'` character is not permitted in UNIX file names. Instead, use backslash (`'\'`) which must be escaped (`'\\'`).
+- Note 1: all of the commands above (`head`, `cat`, `vi`) can be used with any supported network protocol.
+- Note 2: the `'/'` character is not permitted in UNIX file names. Instead, use backslash (`'\'`) which must be escaped as `'\\'`.
 
-
-
-Deleting files
-
-Challenges:
-- slash character
-- trying to save inside mounted directory
-- file attributes (permissions, name, timestamp)
-
-mmap
-- no native support, though still functional
-- fuse has its own buffer
-- mmap does work, uses extra copy
-- offset
-
-swapon:
-FUSE allows you to create a custom filesystem that operates in user space, providing a way to implement file system behaviors using user-level code. It allows you to create virtual filesystems that can be mounted and accessed like regular filesystems.
-
-On the other hand, swapon is a command used to activate swap space in Linux. Swap space is a dedicated partition or file used as virtual memory extension when the system's physical memory (RAM) is fully utilized. It is managed by the kernel and used for swapping out inactive memory pages.
-
-FUSE and swapon serve different purposes and operate at different levels of the system. FUSE is focused on implementing custom filesystems with user-level code, while swapon is used for managing swap space at the kernel level.
-
----
+## Future enhancements
+- Writing data. Everything now is read-only
+- Private Amazon AWS s3 buckets
+- mmap and swapon. These would likely require changes to FUSE's source code
