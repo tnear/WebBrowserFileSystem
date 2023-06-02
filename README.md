@@ -1,13 +1,13 @@
 # WebBrowserFileSystem
 Can your file system be treated as a web browser? This WebBrowserFileSystem repository enables using UNIX's core utilities such as `cat`, `ls`, and `vi` to make network requests to download content from the Internet.
 
-One challenge of working with Linux's command line interface is that its interface for network data differs greatly from viewing local files. For local files, one uses commands such as `cat`, `ls`, and `less`. For web content, one uses `wget` or `curl`. For s3 data, one uses Amazon's SDK. Instead of learning multiple command line interfaces, WebBrowserFileSystem uses unifies all of them: downloading data works the same way as interfacing with local files. WebBrowserFileSystem utilizes [FUSE](https://github.com/libfuse/libfuse) to intercept system calls to make network requests. This provides a seamless experience for users who not need to concern themselves with the type of data they are viewing.
+One challenge of working with Linux's command line interface is that its interface for network data differs greatly from that of viewing local files. For local files, one typically uses commands such as `cat`, `ls`, and `less` to browse the file. For Internet content, there exist separate commands `wget` or `curl` to download it. And for s3 data, Amazon recommends using its SDK. Instead of learning multiple command line interfaces, WebBrowserFileSystem unifies all of them: downloading data works the same way as interfacing with local files. WebBrowserFileSystem utilizes [FUSE](https://github.com/libfuse/libfuse) to intercept Linux system calls to make network requests for supported protocols. This provides a seamless experience for users who no longer need to concern themselves with the location of the data they are viewing.
 
 ## Supported protocols
 * HTTP/HTTPS
 * FTP
-* Amazon S3 buckets (public)
-* DICT
+* Amazon S3 buckets (public-only)
+* [DICT](https://en.wikipedia.org/wiki/DICT)
 
 ## Installation
 ```bash
@@ -16,7 +16,7 @@ $ git clone <repo>
 $ sudo apt install meson
 $ sudo apt install ninja-build
 
-# install fuse, directions here
+# install fuse, directions here:
 https://github.com/libfuse/libfuse
 Download tar
 $ tar -xf <tar>.xz
@@ -30,7 +30,11 @@ $ sudo apt install libsqlite3-dev
 # install curl
 $ sudo apt install libcurl4-openssl-dev
 
-# Build
+## WebBrowserFileSystem steps ##
+# Clone repository
+$ git clone https://github.com/tnear/WebBrowserFileSystem.git
+
+# Build source
 $ cd src
 $ make
 
@@ -46,8 +50,8 @@ $ cd src
 # create mount directory (if doesn't already exist)
 $ mkdir -p mnt
 # start WebBrowserFileSystem executable using 'mnt' as the special directory
-# (-f = run in foreground, required for print statements)
-# (-s = single-threaded, aids debugging)
+#    -f = run in foreground, required for print statements
+#    -s = single-threaded, aids debugging
 $ ./WebBrowserFileSystem -s -f mnt/
 
 # Lastly, open a new terminal/screen then change to your mounted directory
@@ -79,6 +83,6 @@ $ vi ftp:\\\\ftp.slackware.com\\welcome.msg
 - Note 2: the `'/'` character is not permitted in UNIX file names. Instead, use backslash (`'\'`) which must be escaped as `'\\'`.
 
 ## Future enhancements
-- Writing data. Everything now is read-only
-- Private Amazon AWS s3 buckets
-- mmap and swapon. These would likely require changes to FUSE's source code
+- Writing data. Everything now is read-only.
+- Private Amazon AWS S3 buckets + different regions.
+- mmap and swapon. These would likely require updates to FUSE's source code.
