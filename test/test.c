@@ -1177,7 +1177,7 @@ void testConvertS3intoURL()
 
     convertS3intoURL(url, s3);
 
-    assert(strcmp(url, "https://my-bucket.s3.us-east-2.amazonaws.com/dir/file.html") == 0);
+    assert(strcmp(url, "https://my-bucket.s3.amazonaws.com/dir/file.html") == 0);
 }
 
 void testS3()
@@ -1268,7 +1268,7 @@ void testS3fuzz()
 
     convertS3intoURL(url, s3);
     printf("%s\n", url);
-    assert(strcmp(url, "https://ample[\\\\.com.s3.us-east-2.amazonaws.com/") == 0);
+    assert(strcmp(url, "https://ample[\\\\.com.s3.amazonaws.com/") == 0);
 }
 
 void testPaging()

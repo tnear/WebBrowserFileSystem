@@ -88,7 +88,7 @@ void getPathFromS3(char *path, const char *s3)
 }
 
 // ex: convert: "s3://bucket/file.html"
-// to: "https://bucket.s3.us-east-2.amazonaws.com/file.html"
+// to: "https://bucket.s3.amazonaws.com/file.html"
 void convertS3intoURL(char *url, const char *s3)
 {
     assert(util_isS3(s3));
@@ -99,7 +99,7 @@ void convertS3intoURL(char *url, const char *s3)
     getBucketFromS3(bucket, s3);
     getPathFromS3(path, s3);
 
-    sprintf(url, "https://%s.s3.us-east-2.amazonaws.com/%s", bucket, path);
+    sprintf(url, "https://%s.s3.amazonaws.com/%s", bucket, path);
 }
 
 // Fuzzing entry point

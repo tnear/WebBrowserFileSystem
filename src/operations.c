@@ -119,7 +119,7 @@ int operations_read(const char *fusePath, char *buf, size_t size,
     {
         // trying to dump entire file, prompt user how many bytes they want and 
         // recommend to use a paging tool such as less/more instead
-        printf("This URL has a large content length (%lu).\n", size);
+        printf("This URL has a large content length (%lu bytes).\n", size);
         printf("Using a paging command such as 'more' or 'less' is preferred.\n");
         printf("How many of these bytes do you want? [1-%lu] (0 to exit): ", size);
         scanf("%lu", &bytesToKeep);
@@ -175,7 +175,7 @@ int operations_unlink(const char *fusePath, FuseData *fuseData)
 // fusePath: /example.com\\a
 //  =>  url:  example.com/a
 //       s3: /s3:\\\\my-bucket\\index.html
-//  =>  url: https://my-bucket.s3.us-east-2.amazonaws.com/index.html
+//  =>  url: https://my-bucket.s3.amazonaws.com/index.html
 void getUrlFromFusePath(char *url, const char *fusePath, FuseData *fuseData)
 {
     // remove leading slash using +1

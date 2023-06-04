@@ -49,7 +49,7 @@ int _createWebsiteTable(sqlite3 *db)
         "URL  text primary key," \
         "PATH text not null,"    \
         "HTML text not null, "   \
-        "TIME text not null);";
+        "TIME integer not null);";
 
     int rc = sqlite3_exec(db, createTableQuery, 0, 0, NULL);
     assert(rc == SQLITE_OK);
