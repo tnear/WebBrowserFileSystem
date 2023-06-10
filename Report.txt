@@ -1,8 +1,0 @@
-Challenges:
-- Slash character needs to be escaled with backslashes.
-- FUSE diagram shows FUSE traveling through kernel space
-    - Slash character gets truncated
-
-- Cache files in mnt directory locks entire OS
-
----

@@ -53,6 +53,11 @@ int _createWebsiteTable(sqlite3 *db)
 
     int rc = sqlite3_exec(db, createTableQuery, 0, 0, NULL);
     assert(rc == SQLITE_OK);
+
+    char *createIndexSQL = "create index url_index on " WEBSITE "(URL);";
+    rc = sqlite3_exec(db, createIndexSQL, 0, 0, 0);
+    assert(rc == SQLITE_OK);
+
     return rc;
 }
 
