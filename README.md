@@ -3,6 +3,10 @@ Can your file system be treated as a web browser? This WebBrowserFileSystem repo
 
 One challenge of working with Linux's command line tools is that their interface for network data differs greatly from that of viewing local files. For local files, one typically uses commands such as `cat`, `ls`, and `less` to browse the file. For Internet content, there exist separate commands `wget` or `curl` to download it. And for s3 data, Amazon recommends using its SDK. Instead of a user memorizing multiple command line interfaces, WebBrowserFileSystem unifies them all: users can now `cat example.com` or `grep s3://<bucket>/<file>`. WebBrowserFileSystem utilizes [FUSE](https://github.com/libfuse/libfuse) to intercept Linux system calls to make network requests for supported protocols. This provides a seamless experience for users who no longer need to concern themselves with the location of the data they are viewing.
 
+## What does it look like?
+From the mounted directory, run your favorite Linux commands such as `ls`, `less`, and `grep` to access remote content:
+![WebBrowserFileSystem](test/WebBrowserFileSystem.gif)
+
 ## Supported protocols
 * HTTP/HTTPS
 * FTP
@@ -11,14 +15,13 @@ One challenge of working with Linux's command line tools is that their interface
 
 ## Installation
 ```bash
-$ git clone https://github.com/tnear/WebBrowserFileSystem.git
-# install meson & ninja to build fuse
+# first, install meson & ninja to build fuse
 $ sudo apt install meson
 $ sudo apt install ninja-build
 
-# install fuse, directions here:
+# next, install fuse, directions here:
 https://github.com/libfuse/libfuse
-Download tar
+# download fuse tar first, then:
 $ tar -xf <tar>.xz
 
 # install fuse development tools
@@ -31,10 +34,10 @@ $ sudo apt install libsqlite3-dev
 $ sudo apt install libcurl4-openssl-dev
 
 ## WebBrowserFileSystem steps ##
-# Clone repository
+# Clone this repository
 $ git clone https://github.com/tnear/WebBrowserFileSystem.git
 
-# Build source
+# Lastly, build source
 $ cd src
 $ make
 
