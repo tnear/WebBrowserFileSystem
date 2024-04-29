@@ -5,6 +5,7 @@ One challenge of working with Linux's command line tools is that their interface
 
 ## What does it look like?
 From the mounted directory, run your favorite Linux commands such as `ls`, `less`, and `grep` to access remote content:
+
 ![WebBrowserFileSystem](test/WebBrowserFileSystem.gif)
 
 ## Supported protocols
